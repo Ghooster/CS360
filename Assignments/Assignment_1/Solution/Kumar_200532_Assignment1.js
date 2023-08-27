@@ -320,7 +320,6 @@ function drawBirds()
 {
   color = [0,0,0,1]
   var locs = [[0.08,0.65,0], [0.3,0.8,0], [-0.2,0.7,0], [-0.05,0.775,0], [0.05,0.825,0]];
-  var scales = [[0.15,0.2,1], [0.1,0.15,1], [0.1,0.15,1], [0.08,0.11,1], [0.06,0.09,1]];
   var scales = [[0.175,0.175,1], [0.1,0.1,1], [0.1,0.1,1], [0.075,0.075,1], [0.05,0.05,1]];
   for (var i = 0; i < 5; i++)
   {
@@ -464,7 +463,7 @@ function drawBoat()
 {
   if(boatx > 0.8 || boatx < -0.8)
     boatdir *= -1;
-  boatx += 0.002*boatdir;
+  boatx += 0.0025*boatdir;
   mMatrix = mat4.translate(mMatrix, [boatx,-0.075,0]);
   mMatrix = mat4.scale(mMatrix, [0.25,0.25,1]);
   color = [212/255,88/255,37/255,1]
@@ -548,6 +547,32 @@ function drawWindmills()
 
 function drawBushes()
 {
+  var locs = [[-0.12,-1,0], [0.97,-0.47,0], [-0.92,-0.6,0], [-0.24,-0.6,0]];
+  var scales = [ [1.1,0.7,1], [0.7,0.65,1], [0.4,0.4,1], [0.55,0.54,1]];
+  for (var i = 0; i < 4; i++)
+  {
+    pushMatrix(matrixStack, mMatrix);
+    mMatrix = mat4.translate(mMatrix, locs[i]);
+    mMatrix = mat4.scale(mMatrix, scales[i]);
+    color = [42/255, 100/255, 25/255,1]
+    pushMatrix(matrixStack, mMatrix);
+    mMatrix = mat4.translate(mMatrix, [0.2,-0.035,0]);
+    mMatrix = mat4.scale(mMatrix, [0.225,0.175,1]);
+    drawCircle(color, mMatrix);
+    mMatrix =  popMatrix(matrixStack);
+    color = [80/255, 176/255, 51/255,1]
+    pushMatrix(matrixStack, mMatrix);
+    mMatrix = mat4.translate(mMatrix, [-0.2,-0.025,0]);
+    mMatrix = mat4.scale(mMatrix, [0.225,0.175,1]);
+    drawCircle(color, mMatrix);
+    mMatrix =  popMatrix(matrixStack);
+    color = [67/255, 151/255, 42/255,1]
+    pushMatrix(matrixStack, mMatrix);
+    mMatrix = mat4.scale(mMatrix, [0.4,0.25,1]);
+    drawCircle(color, mMatrix);
+    mMatrix =  popMatrix(matrixStack);
+    mMatrix =  popMatrix(matrixStack);
+  }
 }
 
 function drawHouse()
