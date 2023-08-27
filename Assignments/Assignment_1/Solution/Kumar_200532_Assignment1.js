@@ -17,7 +17,8 @@ const vertexShaderCode = `#version 300 es
 in vec2 aPosition;
 uniform mat4 uMMatrix;
 
-void main() {
+void main() 
+{
   gl_Position = uMMatrix*vec4(aPosition,0.0,1.0);
   gl_PointSize = 2.0;
 }`;
@@ -28,54 +29,66 @@ out vec4 fragColor;
 
 uniform vec4 color;
 
-void main() {
+void main() 
+{
   fragColor = color;
 }`;
 
-function pushMatrix(stack, m) {
+function pushMatrix(stack, m)
+{
   var copy = mat4.create(m);
   stack.push(copy);
 }
 
-function popMatrix(stack) {
-  if (stack.length > 0) return stack.pop();
-  else console.log("stack has no matrix to pop!");
+function popMatrix(stack)
+{
+  if (stack.length > 0) 
+    return stack.pop();
+  else
+    console.log("stack has no matrix to pop!");
 }
 
-function degToRad(degrees) {
+function degToRad(degrees)
+{
   return (degrees * Math.PI) / 180;
 }
 
-function vertexShaderSetup(vertexShaderCode) {
+function vertexShaderSetup(vertexShaderCode)
+{
   shader = gl.createShader(gl.VERTEX_SHADER);
   gl.shaderSource(shader, vertexShaderCode);
   gl.compileShader(shader);
-  if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
+  if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS))
+  {
     alert(gl.getShaderInfoLog(shader));
     return null;
   }
   return shader;
 }
 
-function fragmentShaderSetup(fragShaderCode) {
+function fragmentShaderSetup(fragShaderCode)
+{
   shader = gl.createShader(gl.FRAGMENT_SHADER);
   gl.shaderSource(shader, fragShaderCode);
   gl.compileShader(shader);
-  if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
+  if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS))
+  {
     alert(gl.getShaderInfoLog(shader));
     return null;
   }
   return shader;
 }
 
-function initShaders() {
+function initShaders()
+{
   shaderProgram = gl.createProgram();
   var vertexShader = vertexShaderSetup(vertexShaderCode);
   var fragmentShader = fragmentShaderSetup(fragShaderCode);
   gl.attachShader(shaderProgram, vertexShader);
   gl.attachShader(shaderProgram, fragmentShader);
   gl.linkProgram(shaderProgram);
-  if (!gl.getProgramParameter(shaderProgram, gl.LINK_STATUS)) {
+  if (!gl.getProgramParameter(shaderProgram, gl.LINK_STATUS))
+  {
     console.log(gl.getShaderInfoLog(vertexShader));
     console.log(gl.getShaderInfoLog(fragmentShader));
   }
@@ -83,21 +96,24 @@ function initShaders() {
   return shaderProgram;
 }
 
-function initGL(canvas) {
-  try {
+function initGL(canvas)
+{
+  try
+  {
     gl = canvas.getContext("webgl2");
     gl.viewportWidth = canvas.width;
     gl.viewportHeight = canvas.height;
-  } catch (e) { }
-  if (!gl) {
+  }
+  catch (e) { }
+  if (!gl)
+  {
     alert("WebGL initialization failed");
   }
 }
 
-function initSquareBuffer() {
-  const sqVertices = new Float32Array([
-    0.5, 0.5, -0.5, 0.5, -0.5, -0.5, 0.5, -0.5,
-  ]);
+function initSquareBuffer()
+{
+  const sqVertices = new Float32Array([0.5, 0.5, -0.5, 0.5, -0.5, -0.5, 0.5, -0.5,]);
   sqVertexPositionBuffer = gl.createBuffer();
   gl.bindBuffer(gl.ARRAY_BUFFER, sqVertexPositionBuffer);
   gl.bufferData(gl.ARRAY_BUFFER, sqVertices, gl.STATIC_DRAW);
@@ -111,13 +127,15 @@ function initSquareBuffer() {
   sqVertexIndexBuffer.numItems = 6;
 }
 
-function drawSquare(color, mMatrix) {
+function drawSquare(color, mMatrix)
+{
   gl.uniformMatrix4fv(uMMatrixLocation, false, mMatrix);
   gl.bindBuffer(gl.ARRAY_BUFFER, sqVertexPositionBuffer);
   gl.vertexAttribPointer(aPositionLocation, sqVertexPositionBuffer.itemSize, gl.FLOAT, false, 0, 0);
   gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, sqVertexIndexBuffer);
   gl.uniform4fv(uColorLoc, color);
-  switch (mode) {
+  switch (mode)
+  {
     case 0:
       gl.drawElements(gl.TRIANGLES, sqVertexIndexBuffer.numItems, gl.UNSIGNED_SHORT, 0);
       break;
@@ -132,9 +150,11 @@ function drawSquare(color, mMatrix) {
   }
 }
 
-function initCircleBuffer(numPoints) {
+function initCircleBuffer(numPoints)
+{
   var circleVertices = [0, 0];
-  for (var i = 0; i < numPoints; i++) {
+  for (var i = 0; i < numPoints; i++)
+  {
     var angle = (i / numPoints) * 2 * Math.PI;
     circleVertices.push(Math.cos(angle)/2, Math.sin(angle)/2);
   }
@@ -144,7 +164,8 @@ function initCircleBuffer(numPoints) {
   circleBuf.itemSize = 2;
   circleBuf.numItems = numPoints+1;
   var circleIndices = [];
-  for (var i = 0; i < numPoints; i++) {
+  for (var i = 0; i < numPoints; i++)
+  {
     circleIndices.push(0, (i)%numPoints+1, (i+1)%numPoints+1);
   }
   circleIndexBuf = gl.createBuffer();
@@ -154,13 +175,15 @@ function initCircleBuffer(numPoints) {
   circleIndexBuf.numItems = numPoints*3;
 }
 
-function drawCircle(color, mMatrix) {
+function drawCircle(color, mMatrix)
+{
   gl.uniformMatrix4fv(uMMatrixLocation, false, mMatrix);
   gl.bindBuffer(gl.ARRAY_BUFFER, circleBuf);
   gl.vertexAttribPointer(aPositionLocation, circleBuf.itemSize, gl.FLOAT, false, 0, 0);
   gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, circleIndexBuf);
   gl.uniform4fv(uColorLoc, color);
-  switch (mode) {
+  switch (mode)
+  {
     case 0:
       gl.drawElements(gl.TRIANGLES, circleIndexBuf.numItems, gl.UNSIGNED_SHORT, 0);
       break;
@@ -175,7 +198,8 @@ function drawCircle(color, mMatrix) {
   }
 }
 
-function initTriangleBuffer() {
+function initTriangleBuffer()
+{
   const triangleVertices = new Float32Array([0.0, 0.5, -0.5, -0.5, 0.5, -0.5]);
   triangleBuf = gl.createBuffer();
   gl.bindBuffer(gl.ARRAY_BUFFER, triangleBuf);
@@ -190,13 +214,15 @@ function initTriangleBuffer() {
   triangleIndexBuf.numItems = 3;
 }
 
-function drawTriangle(color, mMatrix) {
+function drawTriangle(color, mMatrix)
+{
   gl.uniformMatrix4fv(uMMatrixLocation, false, mMatrix);
   gl.bindBuffer(gl.ARRAY_BUFFER, triangleBuf);
   gl.vertexAttribPointer(aPositionLocation, triangleBuf.itemSize, gl.FLOAT, false, 0, 0);
   gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, triangleIndexBuf);
   gl.uniform4fv(uColorLoc, color);
-  switch (mode) {
+  switch (mode)
+  {
     case 0:
       gl.drawElements(gl.TRIANGLES, triangleIndexBuf.numItems, gl.UNSIGNED_SHORT, 0);
       break;
@@ -211,71 +237,41 @@ function drawTriangle(color, mMatrix) {
   }
 }
 
-function drawScene() {
+function drawScene()
+{
   gl.viewport(0, 0, gl.viewportWidth, gl.viewportHeight);
-  if (animation) {
+  if (animation)
+  {
     window.cancelAnimationFrame(animation);
   }
-  var animate = function () {
+  var animate = function ()
+  {
     gl.clearColor(1, 1, 1, 1);
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
     mat4.identity(mMatrix);
-    pushMatrix(matrixStack, mMatrix);
-    drawSky();
-    mMatrix = popMatrix(matrixStack);
-    pushMatrix(matrixStack, mMatrix);
-    drawSun();
-    mMatrix = popMatrix(matrixStack);
-    pushMatrix(matrixStack, mMatrix);
-    drawClouds();
-    mMatrix = popMatrix(matrixStack);
-    pushMatrix(matrixStack, mMatrix);
-    drawBirds();
-    mMatrix = popMatrix(matrixStack);
-    pushMatrix(matrixStack, mMatrix);
-    drawMountains();
-    mMatrix = popMatrix(matrixStack);
-    pushMatrix(matrixStack, mMatrix);
-    drawGround();
-    mMatrix = popMatrix(matrixStack);
-    pushMatrix(matrixStack, mMatrix);
-    drawTrees();
-    mMatrix = popMatrix(matrixStack);
-    pushMatrix(matrixStack, mMatrix);
-    drawRoad();
-    mMatrix = popMatrix(matrixStack);
-    pushMatrix(matrixStack, mMatrix);
-    drawRiver();
-    mMatrix = popMatrix(matrixStack);
-    pushMatrix(matrixStack, mMatrix);
-    drawBoat();
-    mMatrix = popMatrix(matrixStack);
-    pushMatrix(matrixStack, mMatrix);
-    drawWindmills();
-    mMatrix = popMatrix(matrixStack);
-    pushMatrix(matrixStack, mMatrix);
-    drawBushes();
-    mMatrix = popMatrix(matrixStack);
-    pushMatrix(matrixStack, mMatrix);
-    drawHouse();
-    mMatrix = popMatrix(matrixStack);
-    pushMatrix(matrixStack, mMatrix);
-    drawCar();
-    mMatrix = popMatrix(matrixStack);
+    var funcs = [drawSky, drawSun, drawClouds, drawBirds, drawMountains, drawGround, drawTrees, drawRoad, drawRiver, drawBoat, drawWindmills, drawBushes, drawHouse, drawCar];
+    for (var i = 0; i < funcs.length; i++)
+    {
+      pushMatrix(matrixStack, mMatrix);
+      funcs[i]();
+      mMatrix = popMatrix(matrixStack);
+    }
     animation = window.requestAnimationFrame(animate);
   };
 
   animate();
 }
 
-function drawSky() {
+function drawSky()
+{
   color = [128/255, 202/255, 250/255, 1];
   mMatrix = mat4.translate(mMatrix, [0,0.5,0]);
   mMatrix = mat4.scale(mMatrix, [2,1,1]);
   drawSquare(color, mMatrix);
 }
 
-function drawSun() {
+function drawSun()
+{
   degree1 += 1;
   mMatrix = mat4.translate(mMatrix, [-0.7,0.8,0]);
   mMatrix = mat4.rotate(mMatrix, degToRad(degree1), [0, 0, 1]);
@@ -289,7 +285,8 @@ function drawSun() {
   // color = [0/255, 0/255, 0/255, 1];
   mMatrix = mat4.scale(mMatrix, [0.0075, 0.16, 1]);
   mMatrix = mat4.translate(mMatrix, [0, -0.5, 0]);
-  for (var i = 0; i < 1; i++) {
+  for (var i = 0; i < 1; i++)
+  {
     drawTriangle(color, mMatrix);
     mMatrix = mat4.translate(mMatrix, [0, -0.5, 0]);
     mMatrix = mat4.rotate(mMatrix, degToRad(45), [0, 0, 1]);
@@ -297,7 +294,8 @@ function drawSun() {
   }
 }
 
-function drawClouds() {
+function drawClouds()
+{
   color = [1, 1, 1, 1];
   pushMatrix(matrixStack, mMatrix);
   mMatrix = mat4.translate(mMatrix, [-0.85,0.55,0]);
@@ -316,10 +314,12 @@ function drawClouds() {
   mMatrix =  popMatrix(matrixStack);
 }
 
-function drawBirds() {
+function drawBirds()
+{
 }
 
-function drawMountains() {
+function drawMountains()
+{
   color = [123/255, 94/255, 70/255, 1]
   pushMatrix(matrixStack, mMatrix);
   mMatrix = mat4.translate(mMatrix, [-0.75,0,0]);
@@ -361,15 +361,16 @@ function drawMountains() {
   mMatrix = popMatrix(matrixStack);
 }
 
-function drawGround() {
+function drawGround()
+{
   color = [104/255, 226/255, 138/255, 1];
   mMatrix = mat4.translate(mMatrix, [0,-0.5,0]);
   mMatrix = mat4.scale(mMatrix, [2,1,1]);
   drawSquare(color, mMatrix);
 }
 
-function drawTrees() {
-
+function drawTrees()
+{
   var sizes = [[0.79,0.39,0], [0.5,0.455,0], [0.2,0.34,0]];
   var locs = [[1.142,1.142,1], [1.333,1.333,1], [1,1,1]];
   for (var i = 0; i < 3; i++) {
@@ -403,7 +404,8 @@ function drawTrees() {
   }
 }
 
-function drawRoad() {
+function drawRoad()
+{
   // color = [120/255, 177/255, 72/255, 1];
   // mMatrix = mat4.translate(mMatrix, [0,-0.5*2,0]);
   // mMatrix = mat4.rotate(mMatrix, degToRad(30), [0, 0, 1]);
@@ -412,7 +414,8 @@ function drawRoad() {
   // drawTriangle(color, mMatrix);
 }
 
-function drawRiver() {
+function drawRiver()
+{
   color = [42/255, 100/255, 246/255, 1];
   pushMatrix(matrixStack, mMatrix);
   mMatrix = mat4.translate(mMatrix, [0,-0.135,0]);
@@ -437,16 +440,20 @@ function drawRiver() {
   mMatrix = popMatrix(matrixStack);
 }
 
-function drawBoat() {
+function drawBoat()
+{
 }
 
-function drawWindmills() {
+function drawWindmills()
+{
 }
 
-function drawBushes() {
+function drawBushes()
+{
 }
 
-function drawHouse() {
+function drawHouse()
+{
   color = [229/255, 229/255, 229/255, 1];
   pushMatrix(matrixStack, mMatrix);
   mMatrix = mat4.translate(mMatrix, [-0.6,-0.5,0]);
@@ -460,7 +467,8 @@ function drawHouse() {
   drawSquare(color, mMatrix);
 }
 
-function drawCar() {
+function drawCar()
+{
   color = [191/255, 107/255, 83/255, 1];
   pushMatrix(matrixStack, mMatrix);
   mMatrix = mat4.translate(mMatrix, [-0.52,-0.74,0]);
@@ -493,7 +501,8 @@ function drawCar() {
   drawTriangle(color, mMatrix);
 }
 
-function webGLStart() {
+function webGLStart()
+{
   var canvas = document.getElementById("Assignment1");
   initGL(canvas);
   shaderProgram = initShaders();
@@ -507,7 +516,8 @@ function webGLStart() {
   drawScene();
 }
 
-function mode_fun(m) {
+function mode_fun(m)
+{
   mode = m;
   drawScene();
 }
