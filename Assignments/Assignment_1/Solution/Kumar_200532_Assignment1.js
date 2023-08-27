@@ -12,6 +12,7 @@ var sqVertexPositionBuffer;
 var sqVertexIndexBuffer;
 var c = 0;
 var mode = 0;
+var degree1 = 0;
 
 const vertexShaderCode = `#version 300 es
 in vec2 aPosition;
@@ -236,10 +237,10 @@ function drawScene() {
     drawMountains();
     mMatrix = popMatrix(matrixStack);
     pushMatrix(matrixStack, mMatrix);
-    drawTrees();
+    drawGround();
     mMatrix = popMatrix(matrixStack);
     pushMatrix(matrixStack, mMatrix);
-    drawGround();
+    drawTrees();
     mMatrix = popMatrix(matrixStack);
     pushMatrix(matrixStack, mMatrix);
     drawRoad();
@@ -276,14 +277,18 @@ function drawSky() {
 }
 
 function drawSun() {
+  degree1 += 1;
+  mMatrix = mat4.translate(mMatrix, [-0.7,0.8,0]);
+  mMatrix = mat4.rotate(mMatrix, degToRad(degree1), [0, 0, 1]);
+  mMatrix = mat4.translate(mMatrix, [0.7,-0.8,0]);
   color = [251/255, 230/255, 77/255, 1];
   mMatrix = mat4.translate(mMatrix, [-0.7,0.8,0]);
   pushMatrix(matrixStack, mMatrix);
-  mMatrix = mat4.scale(mMatrix, [0.24,0.24,1]);
+  mMatrix = mat4.scale(mMatrix, [0.225,0.225,1]);
   drawCircle(color, mMatrix);
   mMatrix = popMatrix(matrixStack);
   // color = [0/255, 0/255, 0/255, 1];
-  mMatrix = mat4.scale(mMatrix, [0.01, 0.17, 1]);
+  mMatrix = mat4.scale(mMatrix, [0.0075, 0.16, 1]);
   mMatrix = mat4.translate(mMatrix, [0, -0.5, 0]);
   for (var i = 0; i < 1; i++) {
     drawTriangle(color, mMatrix);
@@ -313,13 +318,48 @@ function drawClouds() {
 }
 
 function drawBirds() {
-  color = [0, 0, 0, 1];
 }
 
 function drawMountains() {
-}
+  color = [123/255, 94/255, 70/255, 1]
+  pushMatrix(matrixStack, mMatrix);
+  mMatrix = mat4.translate(mMatrix, [-0.75,0,0]);
+  pushMatrix(matrixStack, mMatrix);
+  mMatrix = mat4.scale(mMatrix, [1.4,0.35,1]);
+  drawTriangle(color, mMatrix);
+  mMatrix = popMatrix(matrixStack);
+  pushMatrix(matrixStack, mMatrix);
+  color = [145/255, 121/255, 87/255, 1]
+  mMatrix = mat4.translate(mMatrix, [0,0.5*0.35,0]);
+  mMatrix = mat4.rotate(mMatrix, degToRad(10), [0, 0, 1]);
+  mMatrix = mat4.translate(mMatrix, [0,-0.5*0.35,0]);
+  mMatrix = mat4.scale(mMatrix, [1.4,0.35,1]);
+  drawTriangle(color, mMatrix);
+  mMatrix = popMatrix(matrixStack);
+  mMatrix = popMatrix(matrixStack);
 
-function drawTrees() {
+  pushMatrix(matrixStack, mMatrix);
+  mMatrix = mat4.translate(mMatrix, [0.8,0,0]);
+  mMatrix = mat4.scale(mMatrix, [1.2,0.3,1]);
+  drawTriangle(color, mMatrix);
+  mMatrix = popMatrix(matrixStack);
+
+  color = [123/255, 94/255, 70/255, 1]
+  pushMatrix(matrixStack, mMatrix);
+  mMatrix = mat4.translate(mMatrix, [-0.06,0,0]);
+  pushMatrix(matrixStack, mMatrix);
+  mMatrix = mat4.scale(mMatrix, [1.8,0.55,1]);
+  drawTriangle(color, mMatrix);
+  mMatrix = popMatrix(matrixStack);
+  pushMatrix(matrixStack, mMatrix);
+  color = [145/255, 121/255, 87/255, 1]
+  mMatrix = mat4.translate(mMatrix, [0,0.5*0.55,0]);
+  mMatrix = mat4.rotate(mMatrix, degToRad(10), [0, 0, 1]);
+  mMatrix = mat4.translate(mMatrix, [0,-0.5*0.55,0]);
+  mMatrix = mat4.scale(mMatrix, [1.8,0.55,1]);
+  drawTriangle(color, mMatrix);
+  mMatrix = popMatrix(matrixStack);
+  mMatrix = popMatrix(matrixStack);
 }
 
 function drawGround() {
@@ -329,8 +369,99 @@ function drawGround() {
   drawSquare(color, mMatrix);
 }
 
+function drawTrees() {
+  
+  color = [121/255, 79/255, 78/255, 1];
+  pushMatrix(matrixStack, mMatrix);
+  mMatrix = mat4.translate(mMatrix, [0.79,0.39,0]);
+  mMatrix = mat4.scale(mMatrix, [1.142,1.142,1]);
+  pushMatrix(matrixStack, mMatrix);
+  mMatrix = mat4.scale(mMatrix, [0.04,0.24,1]);
+  mMatrix = mat4.translate(mMatrix, [0,-0.95,0]);
+  drawSquare(color, mMatrix);
+  mMatrix = popMatrix(matrixStack);
+  color = [67/255, 151/255, 81/255, 1];
+  pushMatrix(matrixStack, mMatrix);
+  mMatrix = mat4.scale(mMatrix, [0.31,0.26,1]);
+  drawTriangle(color, mMatrix);
+  mMatrix = popMatrix(matrixStack);
+  pushMatrix(matrixStack, mMatrix);
+  color = [105/255, 177/255, 90/255, 1];
+  mMatrix = mat4.scale(mMatrix, [0.34, 0.26, 1]);
+  mMatrix = mat4.translate(mMatrix, [0,0.1,0]);
+  drawTriangle(color, mMatrix);
+  mMatrix = popMatrix(matrixStack);
+  pushMatrix(matrixStack, mMatrix);
+  color = [128/255, 202/255, 95/255, 1];
+  mMatrix = mat4.scale(mMatrix, [0.37, 0.26, 1]);
+  mMatrix = mat4.translate(mMatrix, [0,0.2,0]);
+  drawTriangle(color, mMatrix);
+  mMatrix = popMatrix(matrixStack);
+  mMatrix = popMatrix(matrixStack);
+
+  color = [121/255, 79/255, 78/255, 1];
+  pushMatrix(matrixStack, mMatrix);
+  mMatrix = mat4.translate(mMatrix, [0.5,0.455,0]);
+  mMatrix = mat4.scale(mMatrix, [1.333,1.333,1]);
+  pushMatrix(matrixStack, mMatrix);
+  mMatrix = mat4.scale(mMatrix, [0.04,0.24,1]);
+  mMatrix = mat4.translate(mMatrix, [0,-0.95,0]);
+  drawSquare(color, mMatrix);
+  mMatrix = popMatrix(matrixStack);
+  color = [67/255, 151/255, 81/255, 1];
+  pushMatrix(matrixStack, mMatrix);
+  mMatrix = mat4.scale(mMatrix, [0.31,0.26,1]);
+  drawTriangle(color, mMatrix);
+  mMatrix = popMatrix(matrixStack);
+  pushMatrix(matrixStack, mMatrix);
+  color = [105/255, 177/255, 90/255, 1];
+  mMatrix = mat4.scale(mMatrix, [0.34, 0.26, 1]);
+  mMatrix = mat4.translate(mMatrix, [0,0.1,0]);
+  drawTriangle(color, mMatrix);
+  mMatrix = popMatrix(matrixStack);
+  pushMatrix(matrixStack, mMatrix);
+  color = [128/255, 202/255, 95/255, 1];
+  mMatrix = mat4.scale(mMatrix, [0.37, 0.26, 1]);
+  mMatrix = mat4.translate(mMatrix, [0,0.2,0]);
+  drawTriangle(color, mMatrix);
+  mMatrix = popMatrix(matrixStack);
+  mMatrix = popMatrix(matrixStack);
+
+  color = [121/255, 79/255, 78/255, 1];
+  pushMatrix(matrixStack, mMatrix);
+  mMatrix = mat4.translate(mMatrix, [0.2,0.34,0]);
+  pushMatrix(matrixStack, mMatrix);
+  mMatrix = mat4.scale(mMatrix, [0.04,0.24,1]);
+  mMatrix = mat4.translate(mMatrix, [0,-0.95,0]);
+  drawSquare(color, mMatrix);
+  mMatrix = popMatrix(matrixStack);
+  color = [67/255, 151/255, 81/255, 1];
+  pushMatrix(matrixStack, mMatrix);
+  mMatrix = mat4.scale(mMatrix, [0.31,0.26,1]);
+  drawTriangle(color, mMatrix);
+  mMatrix = popMatrix(matrixStack);
+  pushMatrix(matrixStack, mMatrix);
+  color = [105/255, 177/255, 90/255, 1];
+  mMatrix = mat4.scale(mMatrix, [0.34, 0.26, 1]);
+  mMatrix = mat4.translate(mMatrix, [0,0.1,0]);
+  drawTriangle(color, mMatrix);
+  mMatrix = popMatrix(matrixStack);
+  pushMatrix(matrixStack, mMatrix);
+  color = [128/255, 202/255, 95/255, 1];
+  mMatrix = mat4.scale(mMatrix, [0.37, 0.26, 1]);
+  mMatrix = mat4.translate(mMatrix, [0,0.2,0]);
+  drawTriangle(color, mMatrix);
+  mMatrix = popMatrix(matrixStack);
+  mMatrix = popMatrix(matrixStack);
+}
+
 function drawRoad() {
-  color = [120/255, 177/255, 72/255, 1];
+  // color = [120/255, 177/255, 72/255, 1];
+  // mMatrix = mat4.translate(mMatrix, [0,-0.5*2,0]);
+  // mMatrix = mat4.rotate(mMatrix, degToRad(30), [0, 0, 1]);
+  // mMatrix = mat4.translate(mMatrix, [0,0.5*2,0]);
+  // mMatrix = mat4.scale(mMatrix, [1,2,1]);
+  // drawTriangle(color, mMatrix);
 }
 
 function drawRiver() {
@@ -368,6 +499,17 @@ function drawBushes() {
 }
 
 function drawHouse() {
+  color = [229/255, 229/255, 229/255, 1];
+  pushMatrix(matrixStack, mMatrix);
+  mMatrix = mat4.translate(mMatrix, [-0.6,-0.5,0]);
+  mMatrix = mat4.scale(mMatrix, [0.5,0.25,1]);
+  drawSquare(color, mMatrix);
+  mMatrix = popMatrix(matrixStack);
+  color = [221/255, 181/255, 61/255, 1];
+  pushMatrix(matrixStack, mMatrix);
+  mMatrix = mat4.translate(mMatrix, [-0.6,-0.5-0.125/2,0]);
+  mMatrix = mat4.scale(mMatrix, [0.07,0.15,1]);
+  drawSquare(color, mMatrix);
 }
 
 function drawCar() {
