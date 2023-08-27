@@ -1,17 +1,32 @@
+////////////////////////////////////////////////////////////////////////
+// A simple WebGL program to draw simple 2D shapes with animation.
+//
+
 var gl;
 var color;
 var animation;
+var degree0 = 0;
+var degree1 = 0;
 var matrixStack = [];
+
+// mMatrix is called the model matrix, transforms objects
+// from local object space to world space.
 var mMatrix = mat4.create();
 var uMMatrixLocation;
 var aPositionLocation;
 var uColorLoc;
+
 var circleBuf;
 var circleIndexBuf;
 var sqVertexPositionBuffer;
 var sqVertexIndexBuffer;
-var mode = 0;
-var degree1 = 0;
+
+var view = 2;
+
+function choose_view(v) {
+  view = v;
+  drawScene();
+}
 
 const vertexShaderCode = `#version 300 es
 in vec2 aPosition;
@@ -19,7 +34,7 @@ uniform mat4 uMMatrix;
 
 void main() {
   gl_Position = uMMatrix*vec4(aPosition,0.0,1.0);
-  gl_PointSize = 2.0;
+  gl_PointSize = 5.0;
 }`;
 
 const fragShaderCode = `#version 300 es
@@ -33,6 +48,7 @@ void main() {
 }`;
 
 function pushMatrix(stack, m) {
+  //necessary because javascript only does shallow push
   var copy = mat4.create(m);
   stack.push(copy);
 }
@@ -50,6 +66,7 @@ function vertexShaderSetup(vertexShaderCode) {
   shader = gl.createShader(gl.VERTEX_SHADER);
   gl.shaderSource(shader, vertexShaderCode);
   gl.compileShader(shader);
+  // Error check whether the shader is compiled correctly
   if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
     alert(gl.getShaderInfoLog(shader));
     return null;
@@ -61,6 +78,7 @@ function fragmentShaderSetup(fragShaderCode) {
   shader = gl.createShader(gl.FRAGMENT_SHADER);
   gl.shaderSource(shader, fragShaderCode);
   gl.compileShader(shader);
+  // Error check whether the shader is compiled correctly
   if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
     alert(gl.getShaderInfoLog(shader));
     return null;
@@ -70,31 +88,41 @@ function fragmentShaderSetup(fragShaderCode) {
 
 function initShaders() {
   shaderProgram = gl.createProgram();
+
   var vertexShader = vertexShaderSetup(vertexShaderCode);
   var fragmentShader = fragmentShaderSetup(fragShaderCode);
+
+  // attach the shaders
   gl.attachShader(shaderProgram, vertexShader);
   gl.attachShader(shaderProgram, fragmentShader);
+  //link the shader program
   gl.linkProgram(shaderProgram);
+
+  // check for compilation and linking status
   if (!gl.getProgramParameter(shaderProgram, gl.LINK_STATUS)) {
     console.log(gl.getShaderInfoLog(vertexShader));
     console.log(gl.getShaderInfoLog(fragmentShader));
   }
+
+  //finally use the program.
   gl.useProgram(shaderProgram);
+
   return shaderProgram;
 }
 
 function initGL(canvas) {
   try {
-    gl = canvas.getContext("webgl2");
-    gl.viewportWidth = canvas.width;
-    gl.viewportHeight = canvas.height;
-  } catch (e) { }
+    gl = canvas.getContext("webgl2"); // the graphics webgl2 context
+    gl.viewportWidth = canvas.width; // the width of the canvas
+    gl.viewportHeight = canvas.height; // the height
+  } catch (e) {}
   if (!gl) {
     alert("WebGL initialization failed");
   }
 }
 
 function initSquareBuffer() {
+  // buffer for point locations
   const sqVertices = new Float32Array([
     0.5, 0.5, -0.5, 0.5, -0.5, -0.5, 0.5, -0.5,
   ]);
@@ -103,6 +131,8 @@ function initSquareBuffer() {
   gl.bufferData(gl.ARRAY_BUFFER, sqVertices, gl.STATIC_DRAW);
   sqVertexPositionBuffer.itemSize = 2;
   sqVertexPositionBuffer.numItems = 4;
+
+  // buffer for point indices
   const sqIndices = new Uint16Array([0, 1, 2, 0, 2, 3]);
   sqVertexIndexBuffer = gl.createBuffer();
   gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, sqVertexIndexBuffer);
@@ -113,75 +143,67 @@ function initSquareBuffer() {
 
 function drawSquare(color, mMatrix) {
   gl.uniformMatrix4fv(uMMatrixLocation, false, mMatrix);
+
+  // buffer for point locations
   gl.bindBuffer(gl.ARRAY_BUFFER, sqVertexPositionBuffer);
-  gl.vertexAttribPointer(aPositionLocation, sqVertexPositionBuffer.itemSize, gl.FLOAT, false, 0, 0);
+  gl.vertexAttribPointer(
+    aPositionLocation,
+    sqVertexPositionBuffer.itemSize,
+    gl.FLOAT,
+    false,
+    0,
+    0
+  );
+
+  // buffer for point indices
   gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, sqVertexIndexBuffer);
-  gl.uniform4fv(uColorLoc, color);
-  switch (mode) {
-    case 0:
-      gl.drawElements(gl.TRIANGLES, sqVertexIndexBuffer.numItems, gl.UNSIGNED_SHORT, 0);
-      break;
-    case 1:
-      gl.drawElements(gl.LINE_LOOP, sqVertexIndexBuffer.numItems, gl.UNSIGNED_SHORT, 0);
-      break;
-    case 2:
-      gl.drawElements(gl.POINTS, sqVertexIndexBuffer.numItems, gl.UNSIGNED_SHORT, 0);
-      break;
-    default:
-      console.log("invalid mode");
-  }
-}
 
-function initCircleBuffer(numPoints) {
-  var circleVertices = [0, 0];
-  for (var i = 0; i < numPoints; i++) {
-    var angle = (i / numPoints) * 2 * Math.PI;
-    circleVertices.push(Math.cos(angle)/2, Math.sin(angle)/2);
-  }
-  circleBuf = gl.createBuffer();
-  gl.bindBuffer(gl.ARRAY_BUFFER, circleBuf);
-  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(circleVertices), gl.STATIC_DRAW);
-  circleBuf.itemSize = 2;
-  circleBuf.numItems = numPoints+1;
-  var circleIndices = [];
-  for (var i = 0; i < numPoints; i++) {
-    circleIndices.push(0, (i)%numPoints+1, (i+1)%numPoints+1);
-  }
-  circleIndexBuf = gl.createBuffer();
-  gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, circleIndexBuf);
-  gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(circleIndices), gl.STATIC_DRAW);
-  circleIndexBuf.itemsize = 1;
-  circleIndexBuf.numItems = numPoints*3;
-}
-
-function drawCircle(color, mMatrix) {
-  gl.uniformMatrix4fv(uMMatrixLocation, false, mMatrix);
-  gl.bindBuffer(gl.ARRAY_BUFFER, circleBuf);
-  gl.vertexAttribPointer(aPositionLocation, circleBuf.itemSize, gl.FLOAT, false, 0, 0);
-  gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, circleIndexBuf);
   gl.uniform4fv(uColorLoc, color);
-  switch (mode) {
-    case 0:
-      gl.drawElements(gl.TRIANGLES, circleIndexBuf.numItems, gl.UNSIGNED_SHORT, 0);
-      break;
-    case 1:
-      gl.drawElements(gl.LINE_LOOP, circleIndexBuf.numItems, gl.UNSIGNED_SHORT, 0);
-      break;
-    case 2:
-      gl.drawElements(gl.POINTS, circleIndexBuf.numItems, gl.UNSIGNED_SHORT, 0);
-      break;
-    default:
-      console.log("invalid mode");
+
+  // now draw the square
+  if(view == 0)
+  {
+    gl.drawElements(
+      gl.POINTS,
+      sqVertexIndexBuffer.numItems,
+      gl.UNSIGNED_SHORT,
+      0
+    );
+  }
+  else if(view == 1)
+  {
+    gl.drawElements(
+      gl.LINE_LOOP,
+      sqVertexIndexBuffer.numItems,
+      gl.UNSIGNED_SHORT,
+      0
+    );
+  }
+  else if(view == 2)
+  {
+    gl.drawElements(
+      gl.TRIANGLES,
+      sqVertexIndexBuffer.numItems,
+      gl.UNSIGNED_SHORT,
+      0
+    );
+  }
+  else
+  {
+    console.log("Invalid view");
   }
 }
 
 function initTriangleBuffer() {
+  // buffer for point locations
   const triangleVertices = new Float32Array([0.0, 0.5, -0.5, -0.5, 0.5, -0.5]);
   triangleBuf = gl.createBuffer();
   gl.bindBuffer(gl.ARRAY_BUFFER, triangleBuf);
   gl.bufferData(gl.ARRAY_BUFFER, triangleVertices, gl.STATIC_DRAW);
   triangleBuf.itemSize = 2;
   triangleBuf.numItems = 3;
+
+  // buffer for point indices
   const triangleIndices = new Uint16Array([0, 1, 2]);
   triangleIndexBuf = gl.createBuffer();
   gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, triangleIndexBuf);
@@ -192,25 +214,137 @@ function initTriangleBuffer() {
 
 function drawTriangle(color, mMatrix) {
   gl.uniformMatrix4fv(uMMatrixLocation, false, mMatrix);
+
+  // buffer for point locations
   gl.bindBuffer(gl.ARRAY_BUFFER, triangleBuf);
-  gl.vertexAttribPointer(aPositionLocation, triangleBuf.itemSize, gl.FLOAT, false, 0, 0);
+  gl.vertexAttribPointer(
+    aPositionLocation,
+    triangleBuf.itemSize,
+    gl.FLOAT,
+    false,
+    0,
+    0
+  );
+
+  // buffer for point indices
   gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, triangleIndexBuf);
+
   gl.uniform4fv(uColorLoc, color);
-  switch (mode) {
-    case 0:
-      gl.drawElements(gl.TRIANGLES, triangleIndexBuf.numItems, gl.UNSIGNED_SHORT, 0);
-      break;
-    case 1:
-      gl.drawElements(gl.LINE_LOOP, triangleIndexBuf.numItems, gl.UNSIGNED_SHORT, 0);
-      break;
-    case 2:
-      gl.drawElements(gl.POINTS, triangleIndexBuf.numItems, gl.UNSIGNED_SHORT, 0);
-      break;
-    default:
-      console.log("invalid mode");
+
+  // now draw the square
+  if(view == 0)
+  {
+    gl.drawElements(
+      gl.POINTS,
+      triangleIndexBuf.numItems,
+      gl.UNSIGNED_SHORT,
+      0
+    );
+  }
+  else if(view == 1)
+  {
+    gl.drawElements(
+      gl.LINE_LOOP,
+      triangleIndexBuf.numItems,
+      gl.UNSIGNED_SHORT,
+      0
+    );
+  }
+  else if(view == 2)
+  {
+    gl.drawElements(
+      gl.TRIANGLES,
+      triangleIndexBuf.numItems,
+      gl.UNSIGNED_SHORT,
+      0
+    );
+  }
+  else
+  {
+    console.log("Invalid view");
   }
 }
 
+function initCircleBuffer(resolution) {
+  // buffer for point locations
+  var circleVertices = [];
+  for (var i = 0; i < resolution; i++) {
+    var theta = (i / resolution) * 2 * Math.PI;
+    circleVertices.push(Math.cos(theta)/2, Math.sin(theta)/2);
+  }
+  circleBuf = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, circleBuf);
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(circleVertices), gl.STATIC_DRAW);
+  circleBuf.itemSize = 2;
+  circleBuf.numItems = resolution;
+
+  // buffer for point indices
+  var circleIndices = [];
+  for (var i = 0; i < resolution; i++) {
+    circleIndices.push(0, i%resolution, (i+1)%resolution+1);
+  }
+  circleIndexBuf = gl.createBuffer();
+  gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, circleIndexBuf);
+  gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(circleIndices), gl.STATIC_DRAW);
+  circleIndexBuf.itemsize = 1;
+  circleIndexBuf.numItems = resolution*3;
+}
+
+function drawCircle(color, mMatrix) {
+  gl.uniformMatrix4fv(uMMatrixLocation, false, mMatrix);
+
+  // buffer for point locations
+  gl.bindBuffer(gl.ARRAY_BUFFER, circleBuf);
+  gl.vertexAttribPointer(
+    aPositionLocation,
+    circleBuf.itemSize,
+    gl.FLOAT,
+    false,
+    0,
+    0
+  );
+
+  // buffer for point indices
+  gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, circleIndexBuf);
+
+  gl.uniform4fv(uColorLoc, color);
+
+  // now draw the square
+  if(view == 0)
+  {
+    gl.drawElements(
+      gl.POINTS,
+      circleIndexBuf.numItems,
+      gl.UNSIGNED_SHORT,
+      0
+    );
+  }
+  else if(view == 1)
+  {
+    gl.drawElements(
+      gl.LINE_LOOP,
+      circleIndexBuf.numItems,
+      gl.UNSIGNED_SHORT,
+      0
+    );
+  }
+  else if(view == 2)
+  {
+    gl.drawElements(
+      gl.TRIANGLES,
+      circleIndexBuf.numItems,
+      gl.UNSIGNED_SHORT,
+      0
+    );
+  }
+  else
+  {
+    console.log("Invalid view");
+  }
+}
+
+
+////////////////////////////////////////////////////////////////////////
 function drawScene() {
   gl.viewport(0, 0, gl.viewportWidth, gl.viewportHeight);
   if (animation) {
@@ -494,7 +628,7 @@ function drawCar() {
 }
 
 function webGLStart() {
-  var canvas = document.getElementById("Assignment1");
+  var canvas = document.getElementById("myCanvas");
   initGL(canvas);
   shaderProgram = initShaders();
   const aPositionLocation = gl.getAttribLocation(shaderProgram, "aPosition");
@@ -503,11 +637,6 @@ function webGLStart() {
   uColorLoc = gl.getUniformLocation(shaderProgram, "color");
   initSquareBuffer();
   initTriangleBuffer();
-  initCircleBuffer(50);
-  drawScene();
-}
-
-function mode_fun(m) {
-  mode = m;
+  initCircleBuffer(100);
   drawScene();
 }
