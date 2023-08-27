@@ -275,7 +275,7 @@ function drawSky()
 
 function drawSun()
 {
-  degree1 += 0.2;
+  degree1 += 0.5;
   mMatrix = mat4.translate(mMatrix, [-0.7,0.8,0]);
   mMatrix = mat4.rotate(mMatrix, degToRad(degree1), [0, 0, 1]);
   color = [251/255, 230/255, 77/255, 1];
@@ -287,7 +287,7 @@ function drawSun()
   for (var i = 0; i < 8; i++)
     {
       pushMatrix(matrixStack, mMatrix);
-      mMatrix = mat4.rotate(mMatrix, degToRad(45*i + degree1), [0, 0, 1]);
+      mMatrix = mat4.rotate(mMatrix, degToRad(45*i), [0, 0, 1]);
       mMatrix = mat4.translate(mMatrix, [0,-0.08,0]);
       mMatrix = mat4.scale(mMatrix, [0.0075, 0.16, 1]);
       drawTriangle(color, mMatrix);
@@ -345,8 +345,6 @@ function drawBirds()
     mMatrix = popMatrix(matrixStack);
     mMatrix = popMatrix(matrixStack);
   }
-
-  
 }
 
 function drawMountains()
