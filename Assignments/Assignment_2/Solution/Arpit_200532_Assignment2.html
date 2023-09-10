@@ -1,23 +1,39 @@
 <!DOCTYPE html>
 
 <html>
-  <head>
+
+<head>
     <title>Ballsie - Assignment 2</title>
     <meta http-equiv="content-type" content="text/html; charset=ISO-8859-1" />
     <script type="text/javascript" src="glMatrix-0.9.5.min.js"></script>
     <script type="text/javascript" src="Arpit_200532_Assignment2.js"></script>
-  </head>
+    <style>
+        table.fixed {table-layout:fixed; width:1500px;}
+        table.fixed td {overflow:hidden;}
+        table.fixed td:nth-of-type(1) {width:500px;}
+        table.fixed td:nth-of-type(2) {width:500px;}
+        table.fixed td:nth-of-type(3) {width:500px;}
+        h1 {text-align: center;}
+    </style>
+</head>
 
-  <body onload="webGLStart();">
-    <canvas
-      id="Assignment2"
-      style="border: none"
-      width="1500"
-      height="500"
-    ></canvas>
-    <h4>Change Draw Mode:</h4>
-    <button onclick="mode_fun(2)">Point View</button>
-    <button onclick="mode_fun(1)">Wireframe View</button>
-    <button onclick="mode_fun(0)">Solid View</button>
-  </body>
+<body onload="webGLStart();">
+    <canvas id="Assignment2" style="border: none" width="1500" height="500"></canvas>
+    <table class="fixed">
+        <tr>
+            <td><h1>Per-Face Shading</h1></td>
+            <td><h1>Gouraud Shading (Per-Vertex)</h1></td>
+            <td><h1>Phong Shading (Per-Fragment)</h1></td>
+        </tr>
+    </table>
+    <div class="sliders">
+        <label for="slider">Control Light Position:</label>
+        <input autocomplete="off" type="range" step="any" min="-50" max="50" value="0" id="LightSliderId" />
+    </div>
+    <div class="sliders">
+        <label for="slider">Control Camera Zoom:</label>
+        <input autocomplete="off" type="range" step="any" min="0" max="20" value="2.5" id="CameraSliderId" />
+    </div>
+</body>
+
 </html>
