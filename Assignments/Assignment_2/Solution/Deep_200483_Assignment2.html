@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <title>Assignment 2 Final(CS360)</title>
+    <meta http-equiv="content-type" content="text/html; charset=ISO-8859-1" />
+    <script type="text/javascript" src="glMatrix-0.9.5.min.js"></script>
+    <script type="text/javascript" src="Deep_200483_Assignment2.js"></script>
+    <style>
+      table.names {width:1200px;}
+      td {width:400px; text-align: center;}
+    </style>
+  </head>
+
+  <body onload="webGLStart();">
+    <canvas
+      id="myCanvas"
+      style="border: none"
+      width="1200"
+      height="400"
+    ></canvas>
+    <table class="names">
+      <tr>
+        <td>
+          <h2>Per-Face Shading</h2>
+        </td>
+        <td>
+          <h2>Gouraud Shading (Per-Vertex)</h2>
+        </td>
+        <td>
+          <h2>Phong Shading (Per-Fragment)</h2>
+        </td>
+      </tr>
+    </table>
+    <div class="sliders">
+      <label for="slider">Control Light Position:</label>
+      <input autocomplete="off" type="range" min="-50" max="50" value="-20" step="0.01" id="LPosId" />
+    </div>
+    <div class="sliders">
+      <label for="slider">Control Camera Zoom:</label>
+      <input autocomplete="off" type="range" min="0" max="25" value="2" step="0.01" id="CZoomId" />
+    </div>
+  </body>
+</html>

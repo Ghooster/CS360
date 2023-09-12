@@ -11,10 +11,6 @@ var uVMatrixLocation;
 var uPMatrixLocation;
 var aPositionLocation;
 var uColorLoc;
-var circleBuf;
-var circleIndexBuf;
-var sqVertexPositionBuffer;
-var sqVertexIndexBuffer;
 var height;
 
 var cubeBuf;
@@ -28,25 +24,17 @@ var spVerts = [];
 var spIndicies = [];
 var spNormals = [];
 
-var eyePos = [0.0, 0.0, 2.5];
+var eyePos = [0.0, 0.5, 2.5];
 var COI = [0.0, 0.0, 0.0];
 var viewUp = [0.0, 1.0, 0.0];
 
-var degreeL1 = 0.0;
-var degreeL0 = 0.0;
-var degreeM1 = 0.0;
-var degreeM0 = 0.0;
-var degreeR1 = 0.0;
-var degreeR0 = 0.0;
-var prevMouseLX = 0.0;
-var prevMouseLY = 0.0;
-var prevMouseMX = 0.0;
-var prevMouseMY = 0.0;
-var prevMouseRX = 0.0;
-var prevMouseRY = 0.0;
+var degrees = [0.0, 30.0, 0, -10, 0.0, 30.0];
 
-const vertexShaderCode = `#version 300 es
+var lightPos = [-100, -100, -50];
+
+const faceVertexShaderCode = `#version 300 es
 in vec3 aPosition;
+out vec3 vPosition;
 uniform mat4 uMMatrix;
 uniform mat4 uPMatrix;
 uniform mat4 uVMatrix;
@@ -57,17 +45,110 @@ void main()
 	projectionModelView=uPMatrix*uVMatrix*uMMatrix;
     gl_Position = projectionModelView*vec4(aPosition,1.0);
     gl_PointSize = 2.0;
+    vPosition = vec3(uVMatrix*uMMatrix*vec4(aPosition,1.0));
 }`;
 
-const fragShaderCode = `#version 300 es
+const faceFragShaderCode = `#version 300 es
 precision mediump float;
 out vec4 fragColor;
+uniform vec4 color;
+in vec3 vPosition;
+uniform vec3 lightPos;
 
+
+void main() 
+{
+    vec3 Normal = normalize(cross(dFdx(vPosition), dFdy(vPosition)));
+    vec3 Light = normalize(-lightPos);
+    vec3 Reflect = normalize(-reflect(Light,Normal));
+    vec3 View = normalize(-vPosition);
+    vec4 Ambient = 0.5*color*vec4(1.0,1.0,1.0,1.0);
+    vec4 Diffuse = max(dot(Normal,Light),0.0)*color;
+    vec4 Specular = 0.5*vec4(1.0,1.0,1.0,1.0)*pow(dot(Reflect,View),5.0);
+    fragColor = vec4(Ambient+Diffuse+Specular);
+    fragColor.a = color.a;
+    
+}`;
+
+const vertexVertexShaderCode = `#version 300 es
+in vec3 aPosition;
+in vec3 aNormal;
+out vec4 vColor;
+uniform mat4 uMMatrix;
+uniform mat4 uPMatrix;
+uniform mat4 uVMatrix;
+uniform vec3 lightPos;
 uniform vec4 color;
 
 void main() 
 {
-    fragColor = color;
+    mat4 projectionModelView;
+	projectionModelView=uPMatrix*uVMatrix*uMMatrix;
+    gl_Position = projectionModelView*vec4(aPosition,1.0);
+    gl_PointSize = 2.0;
+    vec3 vPosition = vec3(uVMatrix*uMMatrix*vec4(aPosition,1.0));
+    vec3 Normal = normalize(mat3(transpose(inverse(uVMatrix*uMMatrix)))*aNormal);
+    vec3 Light = normalize(-vec3(uVMatrix*vec4(lightPos,1.0)));
+    vec3 Reflect = normalize(-reflect(Light,Normal));
+    vec3 View = normalize(-vPosition);
+    vec4 Ambient = 0.5*color;
+    vec4 Diffuse = max(dot(Normal,Light),0.0)*color;
+    vec4 Specular = 0.5*vec4(1.0,1.0,1.0,1.0)*pow(dot(Reflect,View),5.0);
+    vColor = Ambient+Diffuse+Specular;
+    vColor.a = color.a;
+    
+}`;
+
+const vertexFragShaderCode = `#version 300 es
+precision mediump float;
+in vec4 vColor;
+out vec4 fragColor;
+
+void main() 
+{
+    fragColor = vColor;
+}`;
+
+const fragmentVertexShaderCode = `#version 300 es
+in vec3 aPosition;
+in vec3 aNormal;
+out vec3 vPosition;
+out vec3 vNormal;
+uniform mat4 uMMatrix;
+uniform mat4 uPMatrix;
+uniform mat4 uVMatrix;
+
+void main() 
+{
+    mat4 projectionModelView;
+	projectionModelView=uPMatrix*uVMatrix*uMMatrix;
+    gl_Position = projectionModelView*vec4(aPosition,1.0);
+    gl_PointSize = 2.0;
+    vPosition = normalize(vec3(uVMatrix*uMMatrix*vec4(aPosition,1.0)));
+    vNormal = normalize(vec3(transpose(inverse(uVMatrix*uMMatrix))*vec4(aNormal,1.0)));
+}`;
+
+const fragmentFragShaderCode = `#version 300 es
+precision mediump float;
+out vec4 fragColor;
+uniform vec4 color;
+in vec3 vPosition;
+in vec3 vNormal;
+uniform vec3 lightPos;
+
+
+void main() 
+{
+    vec3 Normal = normalize(vNormal);
+    vec3 Light = normalize(-lightPos);
+    vec3 Reflect = normalize(-reflect(Light,Normal));
+    vec3 View = normalize(-vPosition);
+    vec4 Ambient = 0.5*color*vec4(1.0,1.0,1.0,1.0);
+    vec4 Diffuse = max(dot(Normal,Light),0.0)*color;
+    vec4 Specular = 0.5*vec4(1.0,1.0,1.0,1.0)*pow(dot(Reflect,View),5.0);
+    fragColor = vec4(Ambient+Diffuse+Specular);
+    fragColor.a = color.a;
+    
 }`;
 
 function pushMatrix(stack, m)
@@ -115,7 +196,7 @@ function fragmentShaderSetup(fragShaderCode)
     return shader;
 }
 
-function initShaders()
+function initShaders(vertexShaderCode, fragShaderCode)
 {
     shaderProgram = gl.createProgram();
     var vertexShader = vertexShaderSetup(vertexShaderCode);
@@ -180,8 +261,8 @@ function initSphere(nslices, nstacks, radius)
   
 function initSphereBuffer()
 {
-    var nslices = 20;
-    var nstacks = 20;
+    var nslices = 30;
+    var nstacks = 30;
     var radius = 1.0;
     initSphere(nslices, nstacks, radius);
     spBuf = gl.createBuffer();
@@ -203,10 +284,11 @@ function initSphereBuffer()
 
 function drawSphere(color, mMatrix)
 {
-    gl.uniformMatrix4fv(uMMatrixLocation, false, mMatrix);
     gl.bindBuffer(gl.ARRAY_BUFFER, spBuf);
     gl.vertexAttribPointer(aPositionLocation, spBuf.itemSize, gl.FLOAT, false, 0, 0);
     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, spIndexBuf);
+    gl.bindBuffer(gl.ARRAY_BUFFER, spNormalBuf);
+    gl.vertexAttribPointer(aNormalLocation, spNormalBuf.itemSize, gl.FLOAT, false, 0, 0);
     gl.uniform4fv(uColorLoc, color);
     gl.uniformMatrix4fv(uMMatrixLocation, false, mMatrix);
     gl.uniformMatrix4fv(uVMatrixLocation, false, vMatrix);
@@ -265,6 +347,8 @@ function drawCube(color, mMatrix)
     gl.bindBuffer(gl.ARRAY_BUFFER, cubeBuf);
     gl.vertexAttribPointer(aPositionLocation, cubeBuf.itemSize, gl.FLOAT, false, 0, 0);
     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, cubeIndexBuf);
+    gl.bindBuffer(gl.ARRAY_BUFFER, cubeNormalBuf);
+    gl.vertexAttribPointer(aNormalLocation, cubeNormalBuf.itemSize, gl.FLOAT, false, 0, 0);
     gl.uniform4fv(uColorLoc, color);
     gl.uniformMatrix4fv(uMMatrixLocation, false, mMatrix);
     gl.uniformMatrix4fv(uVMatrixLocation, false, vMatrix);
@@ -274,9 +358,7 @@ function drawCube(color, mMatrix)
 
 function onMouseDown(event)
 {
-    document.addEventListener("mousemove", onMouseLMove, false);
-    document.addEventListener("mousemove", onMouseMMove, false);
-    document.addEventListener("mousemove", onMouseRMove, false);
+    document.addEventListener("mousemove", onMouseMove, false);
     document.addEventListener("mouseup", onMouseUp, false);
     document.addEventListener("mouseout", onMouseOut, false);
     if (event.layerX <= canvas.width && event.layerX >= 0 && event.layerY <= canvas.height && event.layerY >= 0)
@@ -284,70 +366,36 @@ function onMouseDown(event)
         prevMouseX = event.clientX;
         prevMouseY = canvas.height - event.clientY;
     }
-  }
-  
-function onMouseLMove(event)
-{
-    if (event.layerX <= canvas.width/3 && event.layerX >= 0 && event.layerY <= canvas.height && event.layerY >= 0)
-    {
-        var mouseX = event.clientX;
-        var diffX1 = mouseX - prevMouseX;
-        prevMouseX = mouseX;
-        degreeL0 = degreeL0 + diffX1 / 2;
-        var mouseY = canvas.height - event.clientY;
-        var diffY2 = mouseY - prevMouseY;
-        prevMouseY = mouseY;
-        degreeL1 = degreeL1 - diffY2 / 2;
-        drawScene();
-    }
 }
 
-function onMouseMMove(event)
+function onMouseMove(event)
 {
-    if (event.layerX <= 2*canvas.width/3 && event.layerX >= canvas.width/3 && event.layerY <= canvas.height && event.layerY >= 0)
+    var i = event.layerX/height;
+    if(i>=0 && i<3 && event.layerY <= canvas.height && event.layerY >= 0)
     {
+        i = Math.floor(i);
         var mouseX = event.clientX;
         var diffX1 = mouseX - prevMouseX;
         prevMouseX = mouseX;
-        degreeM0 = degreeM0 + diffX1 / 2;
+        degrees[i*2+1] = degrees[i*2+1] + diffX1 / 5;
         var mouseY = canvas.height - event.clientY;
         var diffY2 = mouseY - prevMouseY;
         prevMouseY = mouseY;
-        degreeM1 = degreeM1 - diffY2 / 2;
-        drawScene();
-    }
-}
-
-function onMouseRMove(event)
-{
-    if (event.layerX <= canvas.width && event.layerX >= 2*canvas.width/3 && event.layerY <= canvas.height && event.layerY >= 0)
-    {
-        var mouseX = event.clientX;
-        var diffX1 = mouseX - prevMouseX;
-        prevMouseX = mouseX;
-        degreeR0 = degreeR0 + diffX1 / 2;
-        var mouseY = canvas.height - event.clientY;
-        var diffY2 = mouseY - prevMouseY;
-        prevMouseY = mouseY;
-        degreeR1 = degreeR1 - diffY2 / 2;
+        degrees[i*2+0] = degrees[i*2+0] - diffY2 / 5;
         drawScene();
     }
 }
 
 function onMouseUp(event)
 {
-    document.removeEventListener("mousemove", onMouseLMove, false);
-    document.removeEventListener("mousemove", onMouseMMove, false);
-    document.removeEventListener("mousemove", onMouseRMove, false);
+    document.removeEventListener("mousemove", onMouseMove, false);
     document.removeEventListener("mouseup", onMouseUp, false);
     document.removeEventListener("mouseout", onMouseOut, false);
 }
   
 function onMouseOut(event)
 {
-    document.removeEventListener("mousemove", onMouseLMove, false);
-    document.removeEventListener("mousemove", onMouseMMove, false);
-    document.removeEventListener("mousemove", onMouseRMove, false);
+    document.removeEventListener("mousemove", onMouseMove, false);
     document.removeEventListener("mouseup", onMouseUp, false);
     document.removeEventListener("mouseout", onMouseOut, false);
 }
@@ -358,8 +406,8 @@ function drawSceneL()
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
     mat4.identity(mMatrix);
-    mMatrix = mat4.rotate(mMatrix, degToRad(degreeL0), [0, 1, 0]);
-    mMatrix = mat4.rotate(mMatrix, degToRad(degreeL1), [1, 0, 0]);
+    mMatrix = mat4.rotate(mMatrix, degToRad(degrees[1]), [0, 1, 0]);
+    mMatrix = mat4.rotate(mMatrix, degToRad(degrees[0]), [1, 0, 0]);
 
     pushMatrix(matrixStack, mMatrix);
     color = [0/255, 112/255, 163/255, 1];
@@ -382,8 +430,8 @@ function drawSceneM()
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
     mat4.identity(mMatrix);
-    mMatrix = mat4.rotate(mMatrix, degToRad(degreeM0), [0, 1, 0]);
-    mMatrix = mat4.rotate(mMatrix, degToRad(degreeM1), [1, 0, 0]);
+    mMatrix = mat4.rotate(mMatrix, degToRad(degrees[3]), [0, 1, 0]);
+    mMatrix = mat4.rotate(mMatrix, degToRad(degrees[2]), [1, 0, 0]);
 
     pushMatrix(matrixStack, mMatrix);
     color = [150/255, 150/255, 150/255, 1];
@@ -408,6 +456,9 @@ function drawSceneM()
     mMatrix = popMatrix(matrixStack);
     mMatrix = popMatrix(matrixStack);
 
+    mMatrix = mat4.translate(mMatrix, [-0.4, 0.25, 0]);
+    mMatrix = mat4.rotate(mMatrix, degToRad(20), [1, 2, 0]);
+    mMatrix = mat4.translate(mMatrix, [0.4, -0.25, 0]);
     pushMatrix(matrixStack, mMatrix);
     mMatrix = mat4.scale(mMatrix, [0.5, 0.5, 0.5]);
     mMatrix = mat4.rotate(mMatrix, degToRad(30), [0, 0, 1]);
@@ -432,8 +483,8 @@ function drawSceneR()
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
     mat4.identity(mMatrix);
-    mMatrix = mat4.rotate(mMatrix, degToRad(degreeR0), [0, 1, 0]);
-    mMatrix = mat4.rotate(mMatrix, degToRad(degreeR1), [1, 0, 0]);
+    mMatrix = mat4.rotate(mMatrix, degToRad(degrees[5]), [0, 1, 0]);
+    mMatrix = mat4.rotate(mMatrix, degToRad(degrees[4]), [1, 0, 0]);
 
     // Upper cube
     pushMatrix(matrixStack, mMatrix);
@@ -524,21 +575,27 @@ function drawScene()
     vMatrix = mat4.lookAt(eyePos, COI, viewUp, vMatrix);
     mat4.identity(pMatrix);
     mat4.perspective(50, 1.0, 0.1, 1000, pMatrix);
-    
+
     mat4.identity(mMatrix);
     pushMatrix(matrixStack, mMatrix);
     gl.viewport(0*height, 0, height, height);
     gl.scissor(0*height, 0, height, height);
+    gl.useProgram(faceShaderProgram);
+    setupShader(faceShaderProgram);
     drawSceneL();
     mMatrix = popMatrix(matrixStack);
     pushMatrix(matrixStack, mMatrix);
     gl.viewport(1*height, 0, height, height);
     gl.scissor(1*height, 0, height, height);
+    gl.useProgram(vertexShaderProgram);
+    setupShader(vertexShaderProgram);
     drawSceneM();
     mMatrix = popMatrix(matrixStack);
     pushMatrix(matrixStack, mMatrix);
     gl.viewport(2*height, 0, height, height);
     gl.scissor(2*height, 0, height, height);
+    gl.useProgram(fragmentShaderProgram);
+    setupShader(fragmentShaderProgram);
     drawSceneR();
     mMatrix = popMatrix(matrixStack);
 }
@@ -552,13 +609,9 @@ function webGLStart()
     sliderC = document.getElementById("CameraSliderId");
     sliderC.addEventListener("input", CameraSliderChanged);
     initGL();
-    shaderProgram = initShaders();
-    const aPositionLocation = gl.getAttribLocation(shaderProgram, "aPosition");
-    uMMatrixLocation = gl.getUniformLocation(shaderProgram, "uMMatrix");
-    uVMatrixLocation = gl.getUniformLocation(shaderProgram, "uVMatrix");
-    uPMatrixLocation = gl.getUniformLocation(shaderProgram, "uPMatrix");
-    gl.enableVertexAttribArray(aPositionLocation);
-    uColorLoc = gl.getUniformLocation(shaderProgram, "color");
+    faceShaderProgram = initShaders(faceVertexShaderCode, faceFragShaderCode);
+    vertexShaderProgram = initShaders(vertexVertexShaderCode, vertexFragShaderCode);
+    fragmentShaderProgram = initShaders(fragmentVertexShaderCode, fragmentFragShaderCode);
     height = canvas.width/3;
     initSphereBuffer();
     initCubeBuffer();
@@ -568,11 +621,27 @@ function webGLStart()
 
 function CameraSliderChanged()
 {
-    eyePos = [0.0, 0.0, parseFloat(sliderC.value)];
+    eyePos[2] = parseFloat(sliderC.value);
     drawScene();
 }
 
 function LightSliderChanged()
 {
-    console.log("Current Light slider value is", sliderL.value);
+    lightPos[0] = parseFloat(sliderL.value);
+    console.log(lightPos);
+    drawScene();
+}
+
+function setupShader(shaderProgram)
+{
+    aPositionLocation = gl.getAttribLocation(shaderProgram, "aPosition");
+    aNormalLocation = gl.getAttribLocation(shaderProgram, "aNormal");
+    uMMatrixLocation = gl.getUniformLocation(shaderProgram, "uMMatrix");
+    uVMatrixLocation = gl.getUniformLocation(shaderProgram, "uVMatrix");
+    uPMatrixLocation = gl.getUniformLocation(shaderProgram, "uPMatrix");
+    gl.enableVertexAttribArray(aPositionLocation);
+    gl.enableVertexAttribArray(aNormalLocation);
+    uColorLoc = gl.getUniformLocation(shaderProgram, "color");
+    uLightPosLoc = gl.getUniformLocation(shaderProgram, "lightPos");
+    gl.uniform3fv(uLightPosLoc, lightPos);
 }
