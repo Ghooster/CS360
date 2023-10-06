@@ -97,131 +97,177 @@ void main() {
   fragColor = objColor;
 }`;
 
+// Vertex shader code for face shading
 const sceneAVertexShaderCode = `#version 300 es
 in vec3 aPosition;
-out vec3 vPosition;
+
 uniform mat4 uMMatrix;
 uniform mat4 uPMatrix;
 uniform mat4 uVMatrix;
 
-void main() 
-{
-    mat4 projectionModelView;
-	projectionModelView=uPMatrix*uVMatrix*uMMatrix;
-    gl_Position = projectionModelView*vec4(aPosition,1.0);
-    gl_PointSize = 2.0;
-    vPosition = vec3(uVMatrix*uMMatrix*vec4(aPosition,1.0));
+out vec3 vertexLoc;
+
+void main(){
+  mat4 projectionModelView;
+
+  projectionModelView=uPMatrix*uVMatrix*uMMatrix;
+
+  gl_Position = projectionModelView*vec4(aPosition,1.0);
+
+  gl_PointSize = 5.0;
+
+  vertexLoc = vec3(uVMatrix*uMMatrix*vec4(aPosition,1.0));
 }`;
 
+// Fragment shader code for face shading
 const sceneAFragmentShaderCode = `#version 300 es
 precision mediump float;
-out vec4 fragColor;
-uniform vec4 color;
-in vec3 vPosition;
+in vec3 vertexLoc;
+
+uniform vec4 initialColor;
 uniform vec3 lightPos;
 
+out vec4 fragColor;
 
-void main() 
-{
-    vec3 Normal = normalize(cross(dFdx(vPosition), dFdy(vPosition)));
-    vec3 Light = normalize(-lightPos);
-    vec3 Reflect = normalize(-reflect(Light,Normal));
-    vec3 View = normalize(-vPosition);
-    vec4 Ambient = 0.5*color*vec4(1.0,1.0,1.0,1.0);
-    // Ambient = vec4(0.0,0.0,0.0,0.0);
-    vec4 Diffuse = max(dot(Normal,Light),0.0)*color;
-    // Diffuse = vec4(0.0,0.0,0.0,0.0);
-    vec4 Specular = 0.5*vec4(1.0,1.0,1.0,1.0)*pow(dot(Reflect,View),5.0);
-    // Specular = vec4(0.0,0.0,0.0,1.0);
-    fragColor = vec4(Ambient+Diffuse+Specular);
-    fragColor.a = color.a;
+void main() {
+  vec4 col1 = 0.6*initialColor*vec4(1.0,1.0,1.0,1.0);
+  // col1 = vec4(0.0,0.0,0.0,0.0);
+
+  vec3 N = normalize(cross(dFdx(vertexLoc), dFdy(vertexLoc)));
+  
+  vec3 L = normalize(-lightPos);
+  
+  
+  vec3 V = normalize(-vertexLoc);
+  vec4 col2 = max(dot(N,L),0.0)*initialColor;
+  // col2 = vec4(0.0,0.0,0.0,0.0);
+
+  vec3 R = normalize(-reflect(L,N));
+
+  vec4 col3 = 0.6*vec4(1.0,1.0,1.0,1.0)*pow(dot(R,V),7.0);
+  // col3 = vec4(0.0,0.0,0.0,1.0);
+
+  fragColor = vec4(col1+col2+col3);
+  fragColor[3] = initialColor[3];
     
 }`;
 
+// Vertex shader code for per-vertex shading
 const sceneBVertexShaderCode = `#version 300 es
 in vec3 aPosition;
 in vec3 aNormal;
-out vec4 vColor;
+
 uniform mat4 uMMatrix;
 uniform mat4 uPMatrix;
 uniform mat4 uVMatrix;
 uniform vec3 lightPos;
-uniform vec4 color;
+uniform vec4 initialColor;
 
-void main() 
-{
-    mat4 projectionModelView;
-	projectionModelView=uPMatrix*uVMatrix*uMMatrix;
-    gl_Position = projectionModelView*vec4(aPosition,1.0);
-    gl_PointSize = 2.0;
-    vec3 vPosition = vec3(uVMatrix*uMMatrix*vec4(aPosition,1.0));
-    vec3 Normal = normalize(mat3(transpose(inverse(uVMatrix*uMMatrix)))*aNormal);
-    vec3 Light = normalize(-vec3(uVMatrix*vec4(lightPos,1.0)));
-    vec3 Reflect = normalize(-reflect(Light,Normal));
-    vec3 View = normalize(-vPosition);
-    vec4 Ambient = 0.5*color;
-    // Ambient = vec4(0.0,0.0,0.0,0.0);
-    vec4 Diffuse = max(dot(Normal,Light),0.0)*color;
-    // Diffuse = vec4(0.0,0.0,0.0,0.0);
-    vec4 Specular = 0.5*vec4(1.0,1.0,1.0,1.0)*pow(dot(Reflect,View),5.0);
-    // Specular = vec4(0.0,0.0,0.0,1.0);
-    vColor = Ambient+Diffuse+Specular;
-    vColor.a = color.a;
+out vec4 vColor;
+
+void main() {
+
+  mat4 projectionModelView;
+  projectionModelView=uPMatrix*uVMatrix*uMMatrix;
+  gl_Position = projectionModelView*vec4(aPosition,1.0);
+
+  gl_PointSize = 5.0;
+
+  vec3 vertexLoc = vec3(uVMatrix*uMMatrix*vec4(aPosition,1.0));
+
+  vec4 col1 = 0.4*initialColor;
+  // col1 = vec4(0.0,0.0,0.0,0.0);
+
+  vec3 N = normalize(mat3(transpose(inverse(uVMatrix*uMMatrix)))*aNormal);
+  vec3 L = normalize(-vec3(uVMatrix*vec4(lightPos,1.0)));
+  
+  vec4 col2 = max(dot(N,L),0.0)*initialColor;
+  // col2 = vec4(0.0,0.0,0.0,0.0);
+
+  vec3 R = normalize(-reflect(L,N));
+  vec3 V = normalize(-vertexLoc);
+
+  vec4 col3 = 0.6*vec4(1.0,1.0,1.0,1.0)*pow(dot(R,V),7.0);
+  // col3 = vec4(0.0,0.0,0.0,1.0);
+
+
+  vColor = col1+col2+col3;
+  vColor.a = initialColor[3];
     
 }`;
 
+// Fragment shader code for per-vertex shading
 const sceneBFragmentShaderCode = `#version 300 es
 precision mediump float;
 in vec4 vColor;
 out vec4 fragColor;
 
-void main() 
-{
-    fragColor = vColor+0.1;
+void main() {
+    fragColor = vColor;
 }`;
 
+// Vertex shader code for per-fragment shading
 const sceneCVertexShaderCode = `#version 300 es
 in vec3 aPosition;
 in vec3 aNormal;
-out vec3 vPosition;
-out vec3 vNormal;
+
 uniform mat4 uMMatrix;
 uniform mat4 uPMatrix;
 uniform mat4 uVMatrix;
 
-void main() 
-{
-    mat4 projectionModelView;
-	projectionModelView=uPMatrix*uVMatrix*uMMatrix;
-    gl_Position = projectionModelView*vec4(aPosition,1.0);
-    gl_PointSize = 2.0;
-    vPosition = normalize(vec3(uVMatrix*uMMatrix*vec4(aPosition,1.0)));
-    vNormal = normalize(vec3(transpose(inverse(uVMatrix*uMMatrix))*vec4(aNormal,1.0)));
+out vec3 vertexLoc;
+out vec3 vNormal;
+
+void main() {
+
+  mat4 projectionModelView;
+  projectionModelView=uPMatrix*uVMatrix*uMMatrix;
+  gl_Position = projectionModelView*vec4(aPosition,1.0);
+
+
+  gl_PointSize = 5.0;
+
+  vertexLoc = normalize(vec3(uVMatrix*uMMatrix*vec4(aPosition,1.0)));
+
+  //New addition for normals
+  vNormal = normalize(vec3(transpose(inverse(uVMatrix*uMMatrix))*vec4(aNormal,1.0)));
 }`;
 
+// Fragment shader code for per-fragment shading
 const sceneCFragmentShaderCode = `#version 300 es
 precision mediump float;
-out vec4 fragColor;
-uniform vec4 color;
-in vec3 vPosition;
+
+in vec3 vertexLoc;
 in vec3 vNormal;
+
+uniform vec4 initialColor;
 uniform vec3 lightPos;
 
+out vec4 fragColor;
 
 void main() 
 {
-    vec3 Normal = normalize(vNormal);
-    vec3 Light = normalize(-lightPos);
-    vec3 Reflect = normalize(-reflect(Light,Normal));
-    vec3 View = normalize(-vPosition);
-    vec4 Ambient = 0.5*color*vec4(1.0,1.0,1.0,1.0);
-    // // Ambient = vec4(0.0,0.0,0.0,0.0);
-    vec4 Diffuse = max(dot(Normal,Light),0.0)*color;
-    // // Diffuse = vec4(0.0,0.0,0.0,0.0);
-    vec4 Specular = 0.5*vec4(1.0,1.0,1.0,1.0)*pow(dot(Reflect,View),5.0);
-    // // Specular = vec4(0.0,0.0,0.0,1.0);
-    fragColor = vec4(Ambient+Diffuse+Specular);
-    fragColor.a = color.a;
+
+    vec4 col1 = 0.4*initialColor*vec4(1.0,1.0,1.0,1.0);
+    // // col1 = vec4(0.0,0.0,0.0,0.0);
+
+    vec3 N = normalize(vNormal);
+    vec3 L = normalize(-lightPos);
+
+    
+
+    vec4 col2 = max(dot(N,L),0.0)*initialColor;
+    // // col2 = vec4(0.0,0.0,0.0,0.0);
+
+    vec3 R = normalize(-reflect(L,N));
+    vec3 V = normalize(-vertexLoc);
+
+
+    vec4 col3 = 0.5*vec4(1.0,1.0,1.0,1.0)*pow(dot(R,V),7.0);
+    // // col3 = vec4(0.0,0.0,0.0,1.0);
+    
+    fragColor = vec4(col1+col2+col3);
+    fragColor[3] = initialColor[3];
     
 }`;
 
@@ -807,14 +853,14 @@ function drawScene() {
   // 1st viewport (A)
   shaderProgram = sceneAShaderProgram
   gl.useProgram(shaderProgram);
-  aPositionLocation = gl.getAttribLocation(shaderProgram, "aPosition");
-  aNormalLocation = gl.getAttribLocation(shaderProgram, "aNormal");
-  uMMatrixLocation = gl.getUniformLocation(shaderProgram, "uMMatrix");
   uVMatrixLocation = gl.getUniformLocation(shaderProgram, "uVMatrix");
+  uMMatrixLocation = gl.getUniformLocation(shaderProgram, "uMMatrix");
+  aPositionLocation = gl.getAttribLocation(shaderProgram, "aPosition");
   uPMatrixLocation = gl.getUniformLocation(shaderProgram, "uPMatrix");
+  aNormalLocation = gl.getAttribLocation(shaderProgram, "aNormal");
   gl.enableVertexAttribArray(aPositionLocation);
   gl.enableVertexAttribArray(aNormalLocation);
-  uColorLoc = gl.getUniformLocation(shaderProgram, "color");
+  uColorLoc = gl.getUniformLocation(shaderProgram, "initialColor");
   uLightPosLoc = gl.getUniformLocation(shaderProgram, "lightPos");
   gl.uniform3fv(uLightPosLoc, lightPos);
 
@@ -853,14 +899,14 @@ function drawScene() {
   // 2nd viewport (B)
   shaderProgram = sceneBShaderProgram
   gl.useProgram(shaderProgram);
-  aPositionLocation = gl.getAttribLocation(shaderProgram, "aPosition");
+  uVMatrixLocation = gl.getUniformLocation(shaderProgram, "uVMatrix");
   aNormalLocation = gl.getAttribLocation(shaderProgram, "aNormal");
   uMMatrixLocation = gl.getUniformLocation(shaderProgram, "uMMatrix");
-  uVMatrixLocation = gl.getUniformLocation(shaderProgram, "uVMatrix");
+  aPositionLocation = gl.getAttribLocation(shaderProgram, "aPosition");
   uPMatrixLocation = gl.getUniformLocation(shaderProgram, "uPMatrix");
   gl.enableVertexAttribArray(aPositionLocation);
   gl.enableVertexAttribArray(aNormalLocation);
-  uColorLoc = gl.getUniformLocation(shaderProgram, "color");
+  uColorLoc = gl.getUniformLocation(shaderProgram, "initialColor");
   uLightPosLoc = gl.getUniformLocation(shaderProgram, "lightPos");
   gl.uniform3fv(uLightPosLoc, lightPos);
   gl.viewport(canvas.width/3, 0, canvas.width/3, canvas.height);
@@ -929,14 +975,14 @@ function drawScene() {
   // 3rd viewport (C)
   shaderProgram = sceneCShaderProgram
   gl.useProgram(shaderProgram);
-  aPositionLocation = gl.getAttribLocation(shaderProgram, "aPosition");
-  aNormalLocation = gl.getAttribLocation(shaderProgram, "aNormal");
-  uMMatrixLocation = gl.getUniformLocation(shaderProgram, "uMMatrix");
   uVMatrixLocation = gl.getUniformLocation(shaderProgram, "uVMatrix");
+  aNormalLocation = gl.getAttribLocation(shaderProgram, "aNormal");
+  aPositionLocation = gl.getAttribLocation(shaderProgram, "aPosition");
+  uMMatrixLocation = gl.getUniformLocation(shaderProgram, "uMMatrix");
   uPMatrixLocation = gl.getUniformLocation(shaderProgram, "uPMatrix");
   gl.enableVertexAttribArray(aPositionLocation);
   gl.enableVertexAttribArray(aNormalLocation);
-  uColorLoc = gl.getUniformLocation(shaderProgram, "color");
+  uColorLoc = gl.getUniformLocation(shaderProgram, "initialColor");
   uLightPosLoc = gl.getUniformLocation(shaderProgram, "lightPos");
   gl.uniform3fv(uLightPosLoc, lightPos);
   gl.viewport(2*canvas.width/3, 0, canvas.width/3, canvas.height);
@@ -952,7 +998,6 @@ function drawScene() {
   mMatrix = mat4.rotate(mMatrix, degToRad(sceneCdegree0), [0, 1, 0]);
   mMatrix = mat4.rotate(mMatrix, degToRad(sceneCdegree1), [1, 0, 0]);
   
-  // top ball
   pushMatrix(matrixStack, mMatrix);
   color = [0.65, 0.65, 0.75, 1];
   mMatrix = mat4.translate(mMatrix, [0, 0.725, 0]);
@@ -960,7 +1005,6 @@ function drawScene() {
   drawSphere(color, mMatrix);
   mMatrix = popMatrix(matrixStack);
   
-  // bottom ball
   pushMatrix(matrixStack, mMatrix);
   color = [0, 0.8, 0.2, 1];
   mMatrix = mat4.translate(mMatrix, [0, -0.725, 0]);
@@ -969,7 +1013,6 @@ function drawScene() {
   mMatrix = popMatrix(matrixStack);
 
 
-  // bottom left sphere
   pushMatrix(matrixStack, mMatrix);
   color = [0.35, 0.35, 0.7, 1];
   mMatrix = mat4.translate(mMatrix, [-0.5, -0.225, 0]);
@@ -978,7 +1021,6 @@ function drawScene() {
   mMatrix = popMatrix(matrixStack);
   
     
-  // top left sphere
   pushMatrix(matrixStack, mMatrix);
   color = [0.8, 0, 0.8, 1];
   mMatrix = mat4.translate(mMatrix, [-0.5, 0.225, 0]);
@@ -987,7 +1029,6 @@ function drawScene() {
   mMatrix = popMatrix(matrixStack);
 
 
-  // bottom right sphere
   pushMatrix(matrixStack, mMatrix);
   color = [0.2, 0.5, 0.5, 1];
   mMatrix = mat4.translate(mMatrix, [0.5, -0.225, 0]);
@@ -996,7 +1037,6 @@ function drawScene() {
   mMatrix = popMatrix(matrixStack);
 
 
-  // top right sphere
   pushMatrix(matrixStack, mMatrix);
   color = [0.75, 0.5, 0.2, 1];
   mMatrix = mat4.translate(mMatrix, [0.5, 0.225, 0]);
@@ -1005,7 +1045,6 @@ function drawScene() {
   mMatrix = popMatrix(matrixStack);
 
 
-  // right plank
   pushMatrix(matrixStack, mMatrix);
   color = [0.2, 0.65, 0.45, 1];
   mMatrix = mat4.translate(mMatrix, [0.5, 0, 0]);
@@ -1014,7 +1053,6 @@ function drawScene() {
   mMatrix = popMatrix(matrixStack);
   
 
-  // left plank
   pushMatrix(matrixStack, mMatrix);
   color = [0.65, 0.65, 0, 1];
   mMatrix = mat4.translate(mMatrix, [-0.5, 0, 0]);
@@ -1023,7 +1061,6 @@ function drawScene() {
   mMatrix = popMatrix(matrixStack);
 
     
-  // bottom plank
   pushMatrix(matrixStack, mMatrix);
   color = [0.6, 0.2, 0, 1];
   mMatrix = mat4.translate(mMatrix, [0.0, -0.45, 0]);
@@ -1032,9 +1069,8 @@ function drawScene() {
   mMatrix = popMatrix(matrixStack);
   
   
-  // top plank
   pushMatrix(matrixStack, mMatrix);
-  // same color as bottom plank
+  // same color as lower plank
   mMatrix = mat4.translate(mMatrix, [0.0, 0.45, 0]);
   mMatrix = mat4.scale(mMatrix, [1.5, 0.05, 0.5]);
   drawCube(color, mMatrix);
@@ -1065,6 +1101,7 @@ function webGLStart() {
   sceneBShaderProgram = initShaders(sceneBVertexShaderCode, sceneBFragmentShaderCode);
   sceneCShaderProgram = initShaders(sceneCVertexShaderCode, sceneCFragmentShaderCode);
 
+  //Initialize the buffers
   initSquareBuffer();
   initTriangleBuffer();
   initCircleBuffer(100);
@@ -1077,12 +1114,12 @@ function webGLStart() {
 }
 
 function changeCameraPos() {
-  eyePos = [0.0, 0.0, parseFloat(CZoomId.value)];
+  eyePos = [0.0, 0.0, CZoomId.value];
   drawScene();
 }
 
 function changeLightPos() {
-  lightPos = [parseFloat(LPosId.value), -20, -10];
+  lightPos = [LPosId.value, -20, -10];
   drawScene();
 }
 

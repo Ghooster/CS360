@@ -288,7 +288,8 @@ function drawSphere(color, mMatrix)
     gl.vertexAttribPointer(aPositionLocation, spBuf.itemSize, gl.FLOAT, false, 0, 0);
     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, spIndexBuf);
     gl.bindBuffer(gl.ARRAY_BUFFER, spNormalBuf);
-    gl.vertexAttribPointer(aNormalLocation, spNormalBuf.itemSize, gl.FLOAT, false, 0, 0);
+    if (aNormalLocation != -1)
+        gl.vertexAttribPointer(aNormalLocation, spNormalBuf.itemSize, gl.FLOAT, false, 0, 0);
     gl.uniform4fv(uColorLoc, color);
     gl.uniformMatrix4fv(uMMatrixLocation, false, mMatrix);
     gl.uniformMatrix4fv(uVMatrixLocation, false, vMatrix);
@@ -348,7 +349,8 @@ function drawCube(color, mMatrix)
     gl.vertexAttribPointer(aPositionLocation, cubeBuf.itemSize, gl.FLOAT, false, 0, 0);
     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, cubeIndexBuf);
     gl.bindBuffer(gl.ARRAY_BUFFER, cubeNormalBuf);
-    gl.vertexAttribPointer(aNormalLocation, cubeNormalBuf.itemSize, gl.FLOAT, false, 0, 0);
+    if (aNormalLocation != -1)
+        gl.vertexAttribPointer(aNormalLocation, cubeNormalBuf.itemSize, gl.FLOAT, false, 0, 0);
     gl.uniform4fv(uColorLoc, color);
     gl.uniformMatrix4fv(uMMatrixLocation, false, mMatrix);
     gl.uniformMatrix4fv(uVMatrixLocation, false, vMatrix);
@@ -628,7 +630,7 @@ function CameraSliderChanged()
 function LightSliderChanged()
 {
     lightPos[0] = parseFloat(sliderL.value);
-    console.log(lightPos);
+    // console.log(lightPos);
     drawScene();
 }
 
@@ -640,7 +642,8 @@ function setupShader(shaderProgram)
     uVMatrixLocation = gl.getUniformLocation(shaderProgram, "uVMatrix");
     uPMatrixLocation = gl.getUniformLocation(shaderProgram, "uPMatrix");
     gl.enableVertexAttribArray(aPositionLocation);
-    gl.enableVertexAttribArray(aNormalLocation);
+    if (aNormalLocation != -1)
+        gl.enableVertexAttribArray(aNormalLocation);
     uColorLoc = gl.getUniformLocation(shaderProgram, "color");
     uLightPosLoc = gl.getUniformLocation(shaderProgram, "lightPos");
     gl.uniform3fv(uLightPosLoc, lightPos);
