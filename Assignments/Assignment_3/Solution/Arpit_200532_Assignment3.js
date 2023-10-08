@@ -22,10 +22,10 @@ var spBuf;
 var spIndexBuf;
 var spNormalBuf;
 var spTexBuf;
-var objVertexPositionBuffer;
-var objVertexNormalBuffer;
-var objVertexTexCoordBuffer;
-var objVertexIndexBuffer;
+var teapotVertexPositionBuffer;
+var teapotVertexNormalBuffer;
+var teapotVertexTexCoordBuffer;
+var teapotVertexIndexBuffer;
 var sqBuf;
 var sqIndexBuf;
 var sqNormalBuf;
@@ -44,6 +44,8 @@ var viewUp = [0.0, 1.0, 0.0];
 var eyeRadius = 5;
 var eyeY = 2;
 var eyePos = [eyeRadius * Math.sin(eyeAngle), eyeY, eyeRadius * Math.cos(eyeAngle)];
+
+var wnMatrix = mat4.create();
 
 var rubicksTextureFile = "texture_and_other_files/rcube.png";
 var rubicksTexture;
@@ -85,16 +87,13 @@ void main()
 const onlyRefractionVertexShaderCode = `#version 300 es
 in vec3 aPosition;
 in vec3 aNormal;
-out vec3 vPosition;
-out vec3 vNormal;
 uniform mat4 uMMatrix;
 uniform mat4 uPMatrix;
 uniform mat4 uVMatrix;
 
-in vec2 aTexCoord;
-out vec2 vTexCoord;
-uniform vec3 eyePos;
-out vec3 vEyePos;
+uniform mat4 uWNMatrix;
+out vec3 v_worldPosition;
+out vec3 v_worldNormal;
 
 void main() 
 {
@@ -102,58 +101,39 @@ void main()
 	projectionModelView=uPMatrix*uVMatrix*uMMatrix;
     gl_Position = projectionModelView*vec4(aPosition,1.0);
     gl_PointSize = 2.0;
-    vPosition = normalize(vec3(uVMatrix*uMMatrix*vec4(aPosition,1.0)));
-    vNormal = normalize(vec3(transpose(inverse(uVMatrix*uMMatrix))*vec4(aNormal,1.0)));
-    vTexCoord = aTexCoord;
-    vEyePos = normalize(vec3(uVMatrix*uMMatrix*vec4(eyePos,1.0)));
+    v_worldPosition = mat3(uMMatrix) * aPosition;
+    v_worldNormal = mat3(uWNMatrix) * aNormal;
 }`;
 
 const onlyRefractionFragmentShaderCode = `#version 300 es
 precision highp float;
 out vec4 fragColor;
-uniform vec4 color;
-in vec3 vPosition;
-in vec3 vNormal;
-uniform vec3 lightPos;
 
-in vec2 vTexCoord;
-uniform sampler2D uTexture;
+in vec3 v_worldPosition;
+in vec3 v_worldNormal;
+
 uniform samplerCube uCubeMap;
 uniform vec3 eyePos;
-in vec3 vEyePos;
 
 void main() 
 {
-    vec3 Normal = normalize(vNormal);
-    vec3 Light = normalize(-lightPos);
-    vec3 Reflect = normalize(-reflect(Light,Normal));
-    vec3 View = normalize(-vPosition);
-    vec4 Ambient = 0.5*color*vec4(1.0,1.0,1.0,1.0);
-    vec4 Diffuse = max(dot(Normal,Light),0.0)*color;
-    vec4 Specular = 0.5*vec4(1.0,1.0,1.0,1.0)*pow(dot(Reflect,View),5.0);
-    fragColor = vec4(Ambient+Diffuse+Specular);
-    fragColor.a = color.a;
-    
-    vec4 texColor = texture(uTexture, vTexCoord);
-    fragColor.rbg = texColor.rbg;
-    
-    // vec3 directionReflection = reflect(View, Normal);
-    // fragColor = texture(uCubeMap, directionReflection);
+    vec3 worldNormal = normalize(v_worldNormal);
+    vec3 eyeToSurfaceDir = normalize(v_worldPosition - eyePos);
+    vec3 directionReflection = refract(eyeToSurfaceDir, worldNormal,0.82);
+    vec4 cubeMapReflectCol = texture(uCubeMap, directionReflection);
+    fragColor = cubeMapReflectCol;
 }`;
 
 const onlyReflectionVertexShaderCode = `#version 300 es
 in vec3 aPosition;
 in vec3 aNormal;
-out vec3 vPosition;
-out vec3 vNormal;
 uniform mat4 uMMatrix;
 uniform mat4 uPMatrix;
 uniform mat4 uVMatrix;
 
-in vec2 aTexCoord;
-out vec2 vTexCoord;
-uniform vec3 eyePos;
-out vec3 vEyePos;
+uniform mat4 uWNMatrix;
+out vec3 v_worldPosition;
+out vec3 v_worldNormal;
 
 void main() 
 {
@@ -161,58 +141,42 @@ void main()
 	projectionModelView=uPMatrix*uVMatrix*uMMatrix;
     gl_Position = projectionModelView*vec4(aPosition,1.0);
     gl_PointSize = 2.0;
-    vPosition = normalize(vec3(uVMatrix*uMMatrix*vec4(aPosition,1.0)));
-    vNormal = normalize(vec3(transpose(inverse(uVMatrix*uMMatrix))*vec4(aNormal,1.0)));
-    vTexCoord = aTexCoord;
-    vEyePos = normalize(vec3(uVMatrix*uMMatrix*vec4(eyePos,1.0)));
+    v_worldPosition = mat3(uMMatrix) * aPosition;
+    v_worldNormal = mat3(uWNMatrix) * aNormal;
 }`;
 
 const onlyReflectionFragmentShaderCode = `#version 300 es
 precision highp float;
 out vec4 fragColor;
-uniform vec4 color;
-in vec3 vPosition;
-in vec3 vNormal;
-uniform vec3 lightPos;
 
-in vec2 vTexCoord;
-uniform sampler2D uTexture;
+in vec3 v_worldPosition;
+in vec3 v_worldNormal;
+
 uniform samplerCube uCubeMap;
 uniform vec3 eyePos;
-in vec3 vEyePos;
 
 void main() 
 {
-    vec3 Normal = normalize(vNormal);
-    vec3 Light = normalize(-lightPos);
-    vec3 Reflect = normalize(-reflect(Light,Normal));
-    vec3 View = normalize(-vPosition);
-    vec4 Ambient = 0.5*color*vec4(1.0,1.0,1.0,1.0);
-    vec4 Diffuse = max(dot(Normal,Light),0.0)*color;
-    vec4 Specular = 0.5*vec4(1.0,1.0,1.0,1.0)*pow(dot(Reflect,View),5.0);
-    fragColor = vec4(Ambient+Diffuse+Specular);
-    fragColor.a = color.a;
-    
-    vec4 texColor = texture(uTexture, vTexCoord);
-    fragColor.rbg = texColor.rbg;
-    
-    // vec3 directionReflection = reflect(View, Normal);
-    // fragColor = texture(uCubeMap, directionReflection);
+    vec3 worldNormal = normalize(v_worldNormal);
+    vec3 eyeToSurfaceDir = normalize(v_worldPosition - eyePos);
+    vec3 directionReflection = reflect(eyeToSurfaceDir, worldNormal);
+    vec4 cubeMapReflectCol = texture(uCubeMap, directionReflection);
+    fragColor = cubeMapReflectCol;
 }`;
 
 const reflectionAndTextureVertexShaderCode = `#version 300 es
 in vec3 aPosition;
 in vec3 aNormal;
-out vec3 vPosition;
-out vec3 vNormal;
 uniform mat4 uMMatrix;
 uniform mat4 uPMatrix;
 uniform mat4 uVMatrix;
 
+uniform mat4 uWNMatrix;
+out vec3 v_worldPosition;
+out vec3 v_worldNormal;
+
 in vec2 aTexCoord;
 out vec2 vTexCoord;
-uniform vec3 eyePos;
-out vec3 vEyePos;
 
 void main() 
 {
@@ -220,43 +184,32 @@ void main()
 	projectionModelView=uPMatrix*uVMatrix*uMMatrix;
     gl_Position = projectionModelView*vec4(aPosition,1.0);
     gl_PointSize = 2.0;
-    vPosition = normalize(vec3(uVMatrix*uMMatrix*vec4(aPosition,1.0)));
-    vNormal = normalize(vec3(transpose(inverse(uVMatrix*uMMatrix))*vec4(aNormal,1.0)));
+    v_worldPosition = mat3(uMMatrix) * aPosition;
+    v_worldNormal = mat3(uWNMatrix) * aNormal;
     vTexCoord = aTexCoord;
-    vEyePos = normalize(vec3(uVMatrix*uMMatrix*vec4(eyePos,1.0)));
 }`;
 
 const reflectionAndTextureFragmentShaderCode = `#version 300 es
 precision highp float;
 out vec4 fragColor;
-uniform vec4 color;
-in vec3 vPosition;
-in vec3 vNormal;
-uniform vec3 lightPos;
+
+in vec3 v_worldPosition;
+in vec3 v_worldNormal;
+
+uniform samplerCube uCubeMap;
+uniform vec3 eyePos;
 
 in vec2 vTexCoord;
 uniform sampler2D uTexture;
-uniform samplerCube uCubeMap;
-uniform vec3 eyePos;
-in vec3 vEyePos;
 
 void main() 
 {
-    vec3 Normal = normalize(vNormal);
-    vec3 Light = normalize(-lightPos);
-    vec3 Reflect = normalize(-reflect(Light,Normal));
-    vec3 View = normalize(-vPosition);
-    vec4 Ambient = 0.5*color*vec4(1.0,1.0,1.0,1.0);
-    vec4 Diffuse = max(dot(Normal,Light),0.0)*color;
-    vec4 Specular = 0.5*vec4(1.0,1.0,1.0,1.0)*pow(dot(Reflect,View),5.0);
-    fragColor = vec4(Ambient+Diffuse+Specular);
-    fragColor.a = color.a;
-    
+    vec3 worldNormal = normalize(v_worldNormal);
+    vec3 eyeToSurfaceDir = normalize(v_worldPosition - eyePos);
+    vec3 directionReflection = reflect(eyeToSurfaceDir, worldNormal);
+    vec4 cubeMapReflectCol = texture(uCubeMap, directionReflection);
     vec4 texColor = texture(uTexture, vTexCoord);
-    fragColor.rbg = texColor.rbg;
-    
-    // vec3 directionReflection = reflect(View, Normal);
-    // fragColor = texture(uCubeMap, directionReflection);
+    fragColor = 0.5*cubeMapReflectCol + 0.5*texColor;
 }`;
 
 const reflectionAndPhongVertexShaderCode = `#version 300 es
@@ -268,10 +221,9 @@ uniform mat4 uMMatrix;
 uniform mat4 uPMatrix;
 uniform mat4 uVMatrix;
 
-in vec2 aTexCoord;
-out vec2 vTexCoord;
-uniform vec3 eyePos;
-out vec3 vEyePos;
+uniform mat4 uWNMatrix;
+out vec3 v_worldPosition;
+out vec3 v_worldNormal;
 
 void main() 
 {
@@ -281,8 +233,8 @@ void main()
     gl_PointSize = 2.0;
     vPosition = normalize(vec3(uVMatrix*uMMatrix*vec4(aPosition,1.0)));
     vNormal = normalize(vec3(transpose(inverse(uVMatrix*uMMatrix))*vec4(aNormal,1.0)));
-    vTexCoord = aTexCoord;
-    vEyePos = normalize(vec3(uVMatrix*uMMatrix*vec4(eyePos,1.0)));
+    v_worldPosition = mat3(uMMatrix) * aPosition;
+    v_worldNormal = mat3(uWNMatrix) * aNormal;
 }`;
 
 const reflectionAndPhongFragmentShaderCode = `#version 300 es
@@ -293,11 +245,11 @@ in vec3 vPosition;
 in vec3 vNormal;
 uniform vec3 lightPos;
 
-in vec2 vTexCoord;
-uniform sampler2D uTexture;
+in vec3 v_worldPosition;
+in vec3 v_worldNormal;
+
 uniform samplerCube uCubeMap;
 uniform vec3 eyePos;
-in vec3 vEyePos;
 
 void main() 
 {
@@ -308,14 +260,14 @@ void main()
     vec4 Ambient = 0.5*color*vec4(1.0,1.0,1.0,1.0);
     vec4 Diffuse = max(dot(Normal,Light),0.0)*color;
     vec4 Specular = 0.5*vec4(1.0,1.0,1.0,1.0)*pow(dot(Reflect,View),5.0);
-    fragColor = vec4(Ambient+Diffuse+Specular);
+
+    vec3 worldNormal = normalize(v_worldNormal);
+    vec3 eyeToSurfaceDir = normalize(v_worldPosition - eyePos);
+    vec3 directionReflection = reflect(eyeToSurfaceDir, worldNormal);
+    vec4 cubeMapReflectCol = texture(uCubeMap, directionReflection);
+    
+    fragColor = vec4(0.25*Ambient+0.25*Diffuse+Specular) + 0.75*cubeMapReflectCol;
     fragColor.a = color.a;
-    
-    vec4 texColor = texture(uTexture, vTexCoord);
-    fragColor.rbg += texColor.rbg;
-    
-    // vec3 directionReflection = reflect(View, Normal);
-    // fragColor = texture(uCubeMap, directionReflection);
 }`;
 
 function pushMatrix(stack, m)
@@ -459,6 +411,10 @@ function initSphereBuffer()
 
 function drawSphere(color, mMatrix)
 {
+    pushMatrix(matrixStack, mMatrix);
+    wnMatrix = mat4.transpose(mat4.inverse(mMatrix));
+    mMatrix = popMatrix(matrixStack);
+
     gl.bindBuffer(gl.ARRAY_BUFFER, spBuf);
     gl.vertexAttribPointer(aPositionLocation, spBuf.itemSize, gl.FLOAT, false, 0, 0);
     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, spIndexBuf);
@@ -540,6 +496,10 @@ function initCubeBuffer()
 
 function drawCube(color, mMatrix, texture)
 {
+    pushMatrix(matrixStack, mMatrix);
+    wnMatrix = mat4.transpose(mat4.inverse(mMatrix));
+    mMatrix = popMatrix(matrixStack);
+    
     gl.bindBuffer(gl.ARRAY_BUFFER, cubeBuf);
     gl.vertexAttribPointer(aPositionLocation, cubeBuf.itemSize, gl.FLOAT, false, 0, 0);
     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, cubeIndexBuf);
@@ -631,39 +591,43 @@ function initTeapot()
   
 function processTeapot(objData)
 {
-    objVertexPositionBuffer = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, objVertexPositionBuffer);
+    teapotVertexPositionBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, teapotVertexPositionBuffer);
     gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(objData.vertexPositions), gl.STATIC_DRAW);
-    objVertexPositionBuffer.itemSize = 3;
-    objVertexPositionBuffer.numItems = objData.vertexPositions.length / 3;
-    objVertexNormalBuffer = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, objVertexNormalBuffer);
+    teapotVertexPositionBuffer.itemSize = 3;
+    teapotVertexPositionBuffer.numItems = objData.vertexPositions.length / 3;
+    teapotVertexNormalBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, teapotVertexNormalBuffer);
     gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(objData.vertexNormals), gl.STATIC_DRAW);
-    objVertexNormalBuffer.itemSize = 3;
-    objVertexNormalBuffer.numItems = objData.vertexNormals.length / 3;
-    objVertexTexCoordBuffer = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, objVertexTexCoordBuffer);
+    teapotVertexNormalBuffer.itemSize = 3;
+    teapotVertexNormalBuffer.numItems = objData.vertexNormals.length / 3;
+    teapotVertexTexCoordBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, teapotVertexTexCoordBuffer);
     gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(objData.vertexTextureCoords), gl.STATIC_DRAW);
-    objVertexTexCoordBuffer.itemSize = 2;
-    objVertexTexCoordBuffer.numItems = objData.vertexTextureCoords.length / 2;
-    objVertexIndexBuffer = gl.createBuffer();
-    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, objVertexIndexBuffer);
+    teapotVertexTexCoordBuffer.itemSize = 2;
+    teapotVertexTexCoordBuffer.numItems = objData.vertexTextureCoords.length / 2;
+    teapotVertexIndexBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, teapotVertexIndexBuffer);
     gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint32Array(objData.indices), gl.STATIC_DRAW);
-    objVertexIndexBuffer.itemSize = 1;
-    objVertexIndexBuffer.numItems = objData.indices.length;
+    teapotVertexIndexBuffer.itemSize = 1;
+    teapotVertexIndexBuffer.numItems = objData.indices.length;
 }
 
 function drawTeapot(color)
 {
-    gl.bindBuffer(gl.ARRAY_BUFFER, objVertexPositionBuffer);
-    gl.vertexAttribPointer(aPositionLocation, objVertexPositionBuffer.itemSize, gl.FLOAT, false, 0, 0);
-    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, objVertexIndexBuffer)
-    gl.bindBuffer(gl.ARRAY_BUFFER, objVertexNormalBuffer);
+    pushMatrix(matrixStack, mMatrix);
+    wnMatrix = mat4.transpose(mat4.inverse(mMatrix));
+    mMatrix = popMatrix(matrixStack);
+
+    gl.bindBuffer(gl.ARRAY_BUFFER, teapotVertexPositionBuffer);
+    gl.vertexAttribPointer(aPositionLocation, teapotVertexPositionBuffer.itemSize, gl.FLOAT, false, 0, 0);
+    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, teapotVertexIndexBuffer)
+    gl.bindBuffer(gl.ARRAY_BUFFER, teapotVertexNormalBuffer);
     if (aNormalLocation != -1)
-        gl.vertexAttribPointer(aNormalLocation, objVertexNormalBuffer.itemSize, gl.FLOAT, false, 0, 0);
-    gl.bindBuffer(gl.ARRAY_BUFFER, objVertexTexCoordBuffer);
+        gl.vertexAttribPointer(aNormalLocation, teapotVertexNormalBuffer.itemSize, gl.FLOAT, false, 0, 0);
+    gl.bindBuffer(gl.ARRAY_BUFFER, teapotVertexTexCoordBuffer);
     if (aTexCoordLocation != -1)
-        gl.vertexAttribPointer(aTexCoordLocation, objVertexTexCoordBuffer.itemSize, gl.FLOAT, false, 0, 0);
+        gl.vertexAttribPointer(aTexCoordLocation, teapotVertexTexCoordBuffer.itemSize, gl.FLOAT, false, 0, 0);
     gl.uniform1i(uTextureLocation, 0);
     gl.activeTexture(gl.TEXTURE0);
     gl.bindTexture(gl.TEXTURE_2D, woodTexture);
@@ -672,7 +636,7 @@ function drawTeapot(color)
     gl.uniformMatrix4fv(uMMatrixLocation, false, mMatrix);
     gl.uniformMatrix4fv(uVMatrixLocation, false, vMatrix);
     gl.uniformMatrix4fv(uPMatrixLocation, false, pMatrix);
-    gl.drawElements(gl.TRIANGLES, objVertexIndexBuffer.numItems, gl.UNSIGNED_INT, 0);
+    gl.drawElements(gl.TRIANGLES, teapotVertexIndexBuffer.numItems, gl.UNSIGNED_INT, 0);
 }
 
 function initTextures(textureFile)
@@ -690,7 +654,7 @@ function initTextures(textureFile)
 function handleTextureLoaded(texture)
 {
     gl.bindTexture(gl.TEXTURE_2D, texture);
-    gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, 1);
+    // gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, 1);
     gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, texture.image);
     gl.generateMipmap(gl.TEXTURE_2D);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
@@ -700,7 +664,7 @@ function handleTextureLoaded(texture)
 
 function initCubeMap()
 {
-    const faceImages = [
+    const faceIndos = [
         {
             target : gl.TEXTURE_CUBE_MAP_POSITIVE_X,
             url : cubeMapPath + "posx.jpg",
@@ -727,11 +691,12 @@ function initCubeMap()
         },
     ];
     cubeMapTexture = gl.createTexture();
+    gl.activeTexture(gl.TEXTURE0+1);
     gl.bindTexture(gl.TEXTURE_CUBE_MAP, cubeMapTexture);
     
-    faceImages.forEach((faceImage) =>
+    faceIndos.forEach((faceInfo) =>
     {
-        const {target, url} = faceImage;
+        const {target, url} = faceInfo;
         const level = 0;
         const internalFormat = gl.RGBA;
         const width = 512;
@@ -814,7 +779,7 @@ function drawScene()
         mMatrix = popMatrix(matrixStack);
         
         eyeAngle -= 0.01;
-        // animation = window.requestAnimationFrame(animate);
+        animation = window.requestAnimationFrame(animate);
     };
     animate();
 }
@@ -826,19 +791,19 @@ function drawBoundingBox()
     mat4.scale(mMatrix, [scale, scale, scale]);
     pushMatrix(matrixStack, mMatrix);
     mat4.translate(mMatrix, [0, 0, -0.5]);
-    mat4.rotate(mMatrix, degToRad(180), [0, 1, 0]);
+    mat4.rotate(mMatrix, degToRad(180), [0, 0, 1]);
     drawSquare(mMatrix, frontFaceTexture);
     mMatrix = popMatrix(matrixStack);
 
     pushMatrix(matrixStack, mMatrix);
     mat4.translate(mMatrix, [0, 0, 0.5]);
+    mat4.rotate(mMatrix, degToRad(180), [1, 0, 0]);
     drawSquare(mMatrix, backFaceTexture);
     mMatrix = popMatrix(matrixStack);
 
     pushMatrix(matrixStack, mMatrix);
     mat4.translate(mMatrix, [0, 0.5, 0]);
     mat4.rotate(mMatrix, degToRad(90), [1, 0, 0]);
-    mat4.rotate(mMatrix, degToRad(180), [1, 0, 0]);
     drawSquare(mMatrix, topFaceTexture);
     mMatrix = popMatrix(matrixStack);
 
@@ -850,6 +815,7 @@ function drawBoundingBox()
 
     pushMatrix(matrixStack, mMatrix);
     mat4.translate(mMatrix, [0.5, 0, 0]);
+    mat4.rotate(mMatrix, degToRad(180), [0, 0, 1]);
     mat4.rotate(mMatrix, degToRad(90), [0, 1, 0]);
     drawSquare(mMatrix, rightFaceTexture);
     mMatrix = popMatrix(matrixStack);
@@ -857,7 +823,7 @@ function drawBoundingBox()
     pushMatrix(matrixStack, mMatrix);
     mat4.translate(mMatrix, [-0.5, 0, 0]);
     mat4.rotate(mMatrix, degToRad(90), [0, 1, 0]);
-    mat4.rotate(mMatrix, degToRad(180), [0, 1, 0]);
+    mat4.rotate(mMatrix, degToRad(180), [0, 0, 1]);
     drawSquare(mMatrix, leftFaceTexture);
     mMatrix = popMatrix(matrixStack);
 
@@ -870,7 +836,7 @@ function drawRubicksCube()
     pushMatrix(matrixStack, mMatrix);
     mMatrix = mat4.translate(mMatrix, [1, -0.5, 1]);
     mMatrix = mat4.scale(mMatrix, [0.5, 0.5, 0.5]);
-    mMatrix = mat4.rotate(mMatrix, degToRad(180), [1, 0, 0]);
+    // mMatrix = mat4.rotate(mMatrix, degToRad(180), [1, 0, 0]);
     drawCube([1, 1, 1, 1], mMatrix, rubicksTexture);
     mMatrix = popMatrix(matrixStack);
 }
@@ -933,6 +899,8 @@ function drawMyTeapot()
     mMatrix = mat4.scale(mMatrix, [scale, scale, scale]);
     drawTeapot(color);
     mMatrix = popMatrix(matrixStack);
+    // drawSphere(color, mMatrix);
+    // drawCube(color, mMatrix, woodTexture);
 }
 
 function drawBalls()
@@ -997,9 +965,13 @@ function setupShader(shaderProgram)
         gl.enableVertexAttribArray(aTexCoordLocation);
     uTextureLocation = gl.getUniformLocation(shaderProgram, "uTexture");
     uCubeMapLocation = gl.getUniformLocation(shaderProgram, "uCubeMap");
+    gl.uniform1i(uTextureLocation, 0);
+    gl.uniform1i(uCubeMapLocation, 1);
     uColorLoc = gl.getUniformLocation(shaderProgram, "color");
     uLightPosLoc = gl.getUniformLocation(shaderProgram, "lightPos");
     gl.uniform3fv(uLightPosLoc, lightPos);
     uEyePosLoc = gl.getUniformLocation(shaderProgram, "eyePos");
     gl.uniform3fv(uEyePosLoc, eyePos);
+    uWNMatrixLocation = gl.getUniformLocation(shaderProgram, "uWNMatrix");
+    gl.uniformMatrix4fv(uWNMatrixLocation, false, wnMatrix);
 }

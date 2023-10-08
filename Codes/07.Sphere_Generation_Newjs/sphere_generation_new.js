@@ -72,3 +72,26 @@ function initSphereBuffer() {
   spNormalBuf.itemSize = 3;
   spNormalBuf.numItems = spNormals.length / 3;
 }
+
+const boundingboxFShader = `#version 300 es
+precision highp float;
+out vec4 fragColor;
+
+in vec2 vTexCoord;
+in vec3 v_worldPosition;
+in vec3 v_worldNormal;
+in vec3 vPosition;
+in vec3 vNormal;
+
+uniform sampler2D uTexture;
+uniform samplerCube uCubeMap;
+uniform vec3 eyePos;
+uniform vec4 color;
+uniform vec3 lightPos;
+
+
+void main() 
+{   
+vec4 texColor = texture(uTexture, vTexCoord);
+fragColor= texColor;
+}`;
