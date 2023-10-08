@@ -32,11 +32,12 @@ var spIndicies = [];
 var spNormals = [];
 var spTexCoords = [];
 
-var eyePos = [0.0, 0.5, 2.5];
 var COI = [0.0, 0.0, 0.0];
 var viewUp = [0.0, 1.0, 0.0];
 
-var degrees = [0.0, 30.0, 0, -10, 0.0, 30.0];
+var eyeAngle = 0.0;
+var eyeRadius = 5.0;
+var eyePos = [eyeRadius * Math.sin(eyeAngle), 0.5, eyeRadius * Math.cos(eyeAngle)];
 
 var lightPos = [-100, -100, -50];
 
@@ -45,6 +46,7 @@ var rubicksTexture;
 var woodTextureFile = "texture_and_other_files/wood_texture.jpg";
 var woodTexture;
 var teapotJSON = "texture_and_other_files/teapot.json";
+var cubeMapPath = "texture_and_other_files/Nvidia_cubemap/";
 
 const faceVertexShaderCode = `#version 300 es
 in vec3 aPosition;
@@ -156,6 +158,7 @@ uniform vec3 lightPos;
 
 in vec2 vTexCoord;
 uniform sampler2D uTexture;
+uniform samplerCube uCubeMap;
 
 void main() 
 {
@@ -169,8 +172,11 @@ void main()
     fragColor = vec4(Ambient+Diffuse+Specular);
     fragColor.a = color.a;
     
-    vec4 texColor = texture(uTexture, vTexCoord);
-    fragColor.rbg += 0.25*texColor.rbg;
+    // vec4 texColor = texture(uTexture, vTexCoord);
+    // fragColor.rbg += 0.25*texColor.rbg;
+    
+    vec3 directionReflection = reflect(-View, Normal);
+    fragColor.rgb = texture(uCubeMap, directionReflection).rgb;
 }`;
 
 function pushMatrix(stack, m)
@@ -482,13 +488,13 @@ function initTextures(textureFile)
     tex.image.src = textureFile;
     tex.image.onload = function ()
     {
-      handleTextureLoaded(tex);
+        handleTextureLoaded(tex);
     };
     return tex;
-  }
+}
   
-  function handleTextureLoaded(texture)
-  {
+function handleTextureLoaded(texture)
+{
     gl.bindTexture(gl.TEXTURE_2D, texture);
     gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, 1);
     gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, texture.image);
@@ -496,7 +502,62 @@ function initTextures(textureFile)
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR);
     drawScene();
-  }
+}
+
+function initCubeMap()
+{
+    const faceImages = [
+        {
+            target : gl.TEXTURE_CUBE_MAP_POSITIVE_X,
+            url : cubeMapPath + "posx.jpg",
+        },
+        {
+            target : gl.TEXTURE_CUBE_MAP_NEGATIVE_X,
+            url : cubeMapPath + "negx.jpg",
+        },
+        {
+            target : gl.TEXTURE_CUBE_MAP_POSITIVE_Y,
+            url : cubeMapPath + "posy.jpg",
+        },
+        {
+            target : gl.TEXTURE_CUBE_MAP_NEGATIVE_Y,
+            url : cubeMapPath + "negy.jpg",
+        },
+        {
+            target : gl.TEXTURE_CUBE_MAP_POSITIVE_Z,
+            url : cubeMapPath + "posz.jpg",
+        },
+        {
+            target : gl.TEXTURE_CUBE_MAP_NEGATIVE_Z,
+            url : cubeMapPath + "negz.jpg",
+        },
+    ];
+    cubeMapTexture = gl.createTexture();
+    gl.bindTexture(gl.TEXTURE_CUBE_MAP, cubeMapTexture);
+    
+    faceImages.forEach((faceImage) =>
+    {
+        const {target, url} = faceImage;
+        const level = 0;
+        const internalFormat = gl.RGBA;
+        const width = 512;
+        const height = 512;
+        const format = gl.RGBA;
+        const type = gl.UNSIGNED_BYTE;
+        gl.texImage2D(target, level, internalFormat, width, height, 0, format, type, null);
+        const image = new Image();
+        image.src = url;
+        image.addEventListener('load', function ()
+        {
+            gl.bindTexture(gl.TEXTURE_CUBE_MAP, cubeMapTexture);
+            gl.texImage2D(target, level, internalFormat, format, type, image);
+            gl.generateMipmap(gl.TEXTURE_CUBE_MAP);
+            drawScene();
+        });
+    });
+    gl.generateMipmap(gl.TEXTURE_CUBE_MAP);
+    gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR);
+}
 
 function draw()
 {
@@ -504,8 +565,6 @@ function draw()
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
     mat4.identity(mMatrix);
-    mMatrix = mat4.rotate(mMatrix, degToRad(degrees[1]), [0, 1, 0]);
-    mMatrix = mat4.rotate(mMatrix, degToRad(degrees[0]), [1, 0, 0]);
     
     pushMatrix(matrixStack, mMatrix);
     color = [0.0, 0.0, 0.0, 1];
@@ -524,27 +583,40 @@ function draw()
     color = [165/255, 166/255, 111/255, 1];
     mMatrix = mat4.translate(mMatrix, [0.0, -0.25, 0]);
     mMatrix = mat4.scale(mMatrix, [0.6, 1, 0.6]);
+    // mMatrix = mat4.scale(mMatrix, [2, 2, 2]);
     drawCube(color, mMatrix);
     mMatrix = popMatrix(matrixStack);
 }
 
 function drawScene()
 {
-    mat4.identity(vMatrix);
-    vMatrix = mat4.lookAt(eyePos, COI, viewUp, vMatrix);
-    mat4.identity(pMatrix);
-    mat4.perspective(50, 1.0, 0.1, 1000, pMatrix);
+    if (animation)
+    {
+        window.cancelAnimationFrame(animation);
+    }
 
-    mat4.identity(mMatrix);
-    pushMatrix(matrixStack, mMatrix);
-    // gl.useProgram(faceShaderProgram);
-    // setupShader(faceShaderProgram);
-    // gl.useProgram(vertexShaderProgram);
-    // setupShader(vertexShaderProgram);
-    gl.useProgram(fragmentShaderProgram);
-    setupShader(fragmentShaderProgram);
-    draw();
-    mMatrix = popMatrix(matrixStack);
+    var animate = function ()
+    {
+        eyeAngle += 0.01;
+        eyePos = [eyeRadius * Math.sin(eyeAngle), 3, eyeRadius * Math.cos(eyeAngle)];
+        mat4.identity(vMatrix);
+        vMatrix = mat4.lookAt(eyePos, COI, viewUp, vMatrix);
+        mat4.identity(pMatrix);
+        mat4.perspective(50, 1.0, 0.1, 1000, pMatrix);
+
+        mat4.identity(mMatrix);
+        pushMatrix(matrixStack, mMatrix);
+        // gl.useProgram(faceShaderProgram);
+        // setupShader(faceShaderProgram);
+        // gl.useProgram(vertexShaderProgram);
+        // setupShader(vertexShaderProgram);
+        gl.useProgram(fragmentShaderProgram);
+        setupShader(fragmentShaderProgram);
+        draw();
+        mMatrix = popMatrix(matrixStack);
+        animation = window.requestAnimationFrame(animate);
+    };
+    animate();
 }
 
 function webGLStart()
@@ -559,6 +631,7 @@ function webGLStart()
     initCubeBuffer();
     rubicksTexture = initTextures(rubicksTextureFile);
     woodTexture = initTextures(woodTextureFile);
+    initCubeMap();
     gl.enable(gl.DEPTH_TEST);
     drawScene();
 }
@@ -577,6 +650,7 @@ function setupShader(shaderProgram)
     if (aTexCoordLocation != -1)
         gl.enableVertexAttribArray(aTexCoordLocation);
     uTextureLocation = gl.getUniformLocation(shaderProgram, "uTexture");
+    uCubeMapLocation = gl.getUniformLocation(shaderProgram, "uCubeMap");
     uColorLoc = gl.getUniformLocation(shaderProgram, "color");
     uLightPosLoc = gl.getUniformLocation(shaderProgram, "lightPos");
     gl.uniform3fv(uLightPosLoc, lightPos);
