@@ -712,6 +712,10 @@ function initSphere(nslices, nstacks, radius) {
       var xcood = comp4 * comp1;
       var ycoord = comp2;
       var zcoord = comp3 * comp1;
+      
+      var utex = 1 - j / nstacks;
+      var vtex = 1 - i / nslices;
+      spTexCoords.push(utex, vtex);
 
       spVerts.push(radius * xcood, radius * ycoord, radius * zcoord);
       spNormals.push(xcood, ycoord, zcoord);
@@ -731,44 +735,33 @@ function initSphere(nslices, nstacks, radius) {
 }
 
 
-function initSphereBuffer() {
-  var nslices = 50;
-  var nstacks = 50;
-  var radius = 1.0;
-
-  initSphere(nslices, nstacks, radius);
-
-  // buffer for vertices
-  spBuf = gl.createBuffer();
-  gl.bindBuffer(gl.ARRAY_BUFFER, spBuf);
-  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(spVerts), gl.STATIC_DRAW);
-  spBuf.itemSize = 3;
-  spBuf.numItems = spVerts.length / 3;
-
-  // buffer for indices
-  spIndexBuf = gl.createBuffer();
-  gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, spIndexBuf);
-  gl.bufferData(
-    gl.ELEMENT_ARRAY_BUFFER,
-    new Uint32Array(spIndicies),
-    gl.STATIC_DRAW
-  );
-  spIndexBuf.itemsize = 1;
-  spIndexBuf.numItems = spIndicies.length;
-
-  // buffer for normals
-  spNormalBuf = gl.createBuffer();
-  gl.bindBuffer(gl.ARRAY_BUFFER, spNormalBuf);
-  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(spNormals), gl.STATIC_DRAW);
-  spNormalBuf.itemSize = 3;
-  spNormalBuf.numItems = spNormals.length / 3;
-
-  // buffer for texture coordinates
-  spTexBuf = gl.createBuffer();
-  gl.bindBuffer(gl.ARRAY_BUFFER, spTexBuf);
-  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(spTexCoords), gl.STATIC_DRAW);
-  spTexBuf.itemSize = 2;
-  spTexBuf.numItems = spTexCoords.length / 2;
+  
+function initSphereBuffer()
+{
+    var nslices = 30;
+    var nstacks = 30;
+    var radius = 1.0;
+    initSphere(nslices, nstacks, radius);
+    spBuf = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, spBuf);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(spVerts), gl.STATIC_DRAW);
+    spBuf.itemSize = 3;
+    spBuf.numItems = spVerts.length / 3;
+    spIndexBuf = gl.createBuffer();
+    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, spIndexBuf);
+    gl.bufferData( gl.ELEMENT_ARRAY_BUFFER, new Uint32Array(spIndicies), gl.STATIC_DRAW);
+    spIndexBuf.itemsize = 1;
+    spIndexBuf.numItems = spIndicies.length;
+    spNormalBuf = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, spNormalBuf);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(spNormals), gl.STATIC_DRAW);
+    spNormalBuf.itemSize = 3;
+    spNormalBuf.numItems = spNormals.length / 3;
+    spTexBuf = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, spTexBuf);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(spTexCoords), gl.STATIC_DRAW);
+    spTexBuf.itemSize = 2;
+    spTexBuf.numItems = spTexCoords.length / 2;
 }
 
 function drawSphere(color, mMatrix) {
@@ -798,6 +791,7 @@ function drawSphere(color, mMatrix) {
   gl.uniform1i(uTextureLocation, 0); // pass the texture unit to the shader
   gl.drawElements(gl.TRIANGLES, spIndexBuf.numItems, gl.UNSIGNED_INT, 0);
 }
+
 
 function initCubeBuffer() {
   var vertices = [
@@ -1275,7 +1269,8 @@ function drawScene() {
   gl.enableVertexAttribArray(aTexCoordLocation);
   uTextureLocation = gl.getUniformLocation(shaderProgram, "uTexture");
   uCubeMapLocation = gl.getUniformLocation(shaderProgram, "uCubeMap");
-  gl.uniform1i(uCubeMapLocation, 1);
+    gl.uniform1i(uTextureLocation, 0);
+    gl.uniform1i(uCubeMapLocation, 1);
   uColorLoc = gl.getUniformLocation(shaderProgram, "color");
   uLightPosLoc = gl.getUniformLocation(shaderProgram, "lightPos");
   gl.uniform3fv(uLightPosLoc, lightPos);
@@ -1345,7 +1340,8 @@ function drawScene() {
   gl.enableVertexAttribArray(aTexCoordLocation);
   uTextureLocation = gl.getUniformLocation(shaderProgram, "uTexture");
   uCubeMapLocation = gl.getUniformLocation(shaderProgram, "uCubeMap");
-  gl.uniform1i(uCubeMapLocation, 1);
+    gl.uniform1i(uTextureLocation, 0);
+    gl.uniform1i(uCubeMapLocation, 1);
   uColorLoc = gl.getUniformLocation(shaderProgram, "color");
   uLightPosLoc = gl.getUniformLocation(shaderProgram, "lightPos");
   gl.uniform3fv(uLightPosLoc, lightPos);
@@ -1377,6 +1373,7 @@ function drawScene() {
     gl.enableVertexAttribArray(aTexCoordLocation);
     uTextureLocation = gl.getUniformLocation(shaderProgram, "uTexture");
     uCubeMapLocation = gl.getUniformLocation(shaderProgram, "uCubeMap");
+    gl.uniform1i(uTextureLocation, 0);
     gl.uniform1i(uCubeMapLocation, 1);
     uColorLoc = gl.getUniformLocation(shaderProgram, "color");
     uLightPosLoc = gl.getUniformLocation(shaderProgram, "lightPos");
@@ -1438,6 +1435,7 @@ function drawScene() {
     gl.enableVertexAttribArray(aTexCoordLocation);
     uTextureLocation = gl.getUniformLocation(shaderProgram, "uTexture");
     uCubeMapLocation = gl.getUniformLocation(shaderProgram, "uCubeMap");
+    gl.uniform1i(uTextureLocation, 0);
     gl.uniform1i(uCubeMapLocation, 1);
     uColorLoc = gl.getUniformLocation(shaderProgram, "color");
     uLightPosLoc = gl.getUniformLocation(shaderProgram, "lightPos");
@@ -1472,6 +1470,7 @@ function drawScene() {
     gl.enableVertexAttribArray(aTexCoordLocation);
     uTextureLocation = gl.getUniformLocation(shaderProgram, "uTexture");
     uCubeMapLocation = gl.getUniformLocation(shaderProgram, "uCubeMap");
+    gl.uniform1i(uTextureLocation, 0);
     gl.uniform1i(uCubeMapLocation, 1);
     uColorLoc = gl.getUniformLocation(shaderProgram, "color");
     uLightPosLoc = gl.getUniformLocation(shaderProgram, "lightPos");
@@ -1506,6 +1505,7 @@ function drawScene() {
     gl.enableVertexAttribArray(aTexCoordLocation);
     uTextureLocation = gl.getUniformLocation(shaderProgram, "uTexture");
     uCubeMapLocation = gl.getUniformLocation(shaderProgram, "uCubeMap");
+    gl.uniform1i(uTextureLocation, 0);
     gl.uniform1i(uCubeMapLocation, 1);
     uColorLoc = gl.getUniformLocation(shaderProgram, "color");
     uLightPosLoc = gl.getUniformLocation(shaderProgram, "lightPos");
