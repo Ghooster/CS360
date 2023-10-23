@@ -39,7 +39,7 @@ void main()
 }`;
 
 const myFragmentShaderCode = `#version 300 es
-precision mediump float;
+precision highp float;
 out vec4 fragColor;
 
 in vec2 vBackgroundTexCoord;
@@ -215,7 +215,7 @@ function initSquareBuffer()
     sqIndexBuf.numItems = indices.length;
 }
 
-function drawSquare(backgroundTexture)
+function drawSquare()
 {
     gl.bindBuffer(gl.ARRAY_BUFFER, sqBuf);
     gl.vertexAttribPointer(aPositionLocation, sqBuf.itemSize, gl.FLOAT, false, 0, 0);
@@ -223,7 +223,7 @@ function drawSquare(backgroundTexture)
     gl.bindBuffer(gl.ARRAY_BUFFER, sqTexBuf);
     gl.vertexAttribPointer(aBackgroundTexCoordLocation, sqTexBuf.itemSize, gl.FLOAT, false, 0, 0);
     gl.activeTexture(gl.TEXTURE0);
-    gl.bindTexture(gl.TEXTURE_2D, backgroundTexture);
+    gl.bindTexture(gl.TEXTURE_2D, BackgroundTexture);
     gl.uniform1i(uBackgroundTextureLocation, 0);
     gl.vertexAttribPointer(aForegroundTexCoordLocation, sqTexBuf.itemSize, gl.FLOAT, false, 0, 0);
     gl.activeTexture(gl.TEXTURE1);
@@ -271,7 +271,7 @@ function drawScene()
     gl.useProgram(myTextureShaderProgram);
     setupShader(myTextureShaderProgram);
 
-    drawSquare(BackgroundTexture);
+    drawSquare();
 }
 
 function webGLStart()
