@@ -35,11 +35,11 @@ Contrast
 Brightness
 <input type="range" step="any" id="brightness" name="brightness" min="-0.5" max="0.5" value="0" oninput="changeBrightnessValue(this.value)"><br><br>
 <!-- 4 radio buttons for Smooth, Sharpen, Gradient and Laplacian -->
-<b>Process Background Image:</b><br><br>
-<input type="radio" id="smooth" name="filter" value="smooth" onclick="smooth()">Smooth
-<input type="radio" id="sharpen" name="filter" value="sharpen" onclick="sharpen()">Sharpen
-<input type="radio" id="gradient" name="filter" value="gradient" onclick="gradient()">Gradient
-<input type="radio" id="laplacian" name="filter" value="laplacian" onclick="laplacian()">Laplacian<br><br>
+<b>Process Background Image:</b><br>
+<input type="radio" id="smooth" name="filter" value="smooth" onclick="processBackgroundImage(1)">Smooth
+<input type="radio" id="sharpen" name="filter" value="sharpen" onclick="processBackgroundImage(2)">Sharpen
+<input type="radio" id="gradient" name="filter" value="gradient" onclick="processBackgroundImage(3)">Gradient
+<input type="radio" id="laplacian" name="filter" value="laplacian" onclick="processBackgroundImage(4)">Laplacian<br><br>
 <!-- Buttons to reset screen and Save Screenshot -->
 <input type="button" id="reset" name="reset" value="Reset Scene" onclick="resetScene()">
 <input type="button" id="save" name="save" value="Save Screenshot" onclick="saveScreenshot()"><br><br>

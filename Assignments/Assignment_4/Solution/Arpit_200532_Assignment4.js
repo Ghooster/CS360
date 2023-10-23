@@ -5,23 +5,22 @@ var matrixStack = [];
 var aPositionLocation;
 var aBackgroundTexCoordLocation;
 var aForegroundTexCoordLocation;
-var uColorLoc;
 var sqBuf;
 var sqIndexBuf;
 var sqNormalBuf;
 var sqTexBuf;
 
-var defaultBackgroundTextureFile = "sample_Textures/nature_3.jpg";
-var BackgroundTextureFile = defaultBackgroundTextureFile;
+var BackgroundTextureFile;
 var BackgroundTexture;
-var defaultForegroundTextureFile = "sample_Textures/teacup_alpha.png";
-var ForegroundTextureFile = defaultForegroundTextureFile;
+var ForegroundTextureFile;
 var ForegroundTexture;
 
-var imageMode = 1;
+var imageMode = 0;
 var colorMode = 0;
 var contrastValue = 0.0;
 var brightnessValue = 0.0;
+var process = 0;
+var pixelSize;
 
 const myVertexShaderCode = `#version 300 es
 in vec2 aPosition;
@@ -40,7 +39,7 @@ void main()
 }`;
 
 const myFragmentShaderCode = `#version 300 es
-precision highp float;
+precision mediump float;
 out vec4 fragColor;
 
 in vec2 vBackgroundTexCoord;
@@ -52,10 +51,41 @@ uniform int uImageMode;
 uniform int uColorMode;
 uniform float uContrastValue;
 uniform float uBrightnessValue;
+uniform int uProcess;
+uniform float uPixelSize;
 
 void main() 
 {
-    vec4 backgroundTexColor = texture(uBackgroundTexture, vBackgroundTexCoord);
+    vec4 urBackgroundTexColor = texture(uBackgroundTexture, vBackgroundTexCoord + vec2(-1.0*uPixelSize, uPixelSize));
+    vec4 uBackgroundTexColor = texture(uBackgroundTexture, vBackgroundTexCoord + vec2(0.0, uPixelSize));
+    vec4 ulBackgroundTexColor = texture(uBackgroundTexture, vBackgroundTexCoord + vec2(uPixelSize, uPixelSize));
+    vec4 rBackgroundTexColor = texture(uBackgroundTexture, vBackgroundTexCoord + vec2(-1.0*uPixelSize, 0.0));
+    vec4 mBackgroundTexColor = texture(uBackgroundTexture, vBackgroundTexCoord + vec2(0.0, 0.0));
+    vec4 lBackgroundTexColor = texture(uBackgroundTexture, vBackgroundTexCoord + vec2(uPixelSize, 0.0));
+    vec4 drBackgroundTexColor = texture(uBackgroundTexture, vBackgroundTexCoord + vec2(-1.0*uPixelSize, -1.0*uPixelSize));
+    vec4 dBackgroundTexColor = texture(uBackgroundTexture, vBackgroundTexCoord + vec2(0.0, -1.0*uPixelSize));
+    vec4 dlBackgroundTexColor = texture(uBackgroundTexture, vBackgroundTexCoord + vec2(uPixelSize, -1.0*uPixelSize));
+
+    vec4 backgroundTexColor = mBackgroundTexColor;
+    if(uProcess == 1)
+    {
+        backgroundTexColor = (urBackgroundTexColor + uBackgroundTexColor + ulBackgroundTexColor + rBackgroundTexColor + mBackgroundTexColor + lBackgroundTexColor + drBackgroundTexColor + dBackgroundTexColor + dlBackgroundTexColor)/9.0;
+    }
+    else if(uProcess == 2)
+    {
+        backgroundTexColor = (-uBackgroundTexColor - rBackgroundTexColor - dBackgroundTexColor - lBackgroundTexColor + 5.0*mBackgroundTexColor);
+    }
+    else if(uProcess == 3)
+    {
+        vec4 dy = (uBackgroundTexColor - dBackgroundTexColor)*0.5;
+        vec4 dx = (rBackgroundTexColor - lBackgroundTexColor)*0.5;
+        backgroundTexColor = sqrt(dy*dy + dx*dx);
+    }
+    else if(uProcess == 4)
+    {
+        backgroundTexColor = (-uBackgroundTexColor - rBackgroundTexColor - dBackgroundTexColor - lBackgroundTexColor + 4.0*mBackgroundTexColor);
+    }
+    
     vec4 foregroundTexColor = texture(uForegroundTexture, vForegroundTexCoord);
     vec4 finalTexColor = vec4(foregroundTexColor.a*foregroundTexColor.rgb + (1.0-foregroundTexColor.a)*backgroundTexColor.rgb, 1.0);
     if(uImageMode == 0)
@@ -146,6 +176,7 @@ function initGL()
         gl = canvas.getContext("webgl2", {preserveDrawingBuffer: true});
         gl.viewportWidth = canvas.width;
         gl.viewportHeight = canvas.height;
+        pixelSize = 2.0 / gl.viewportWidth;
     }
     catch (e) { }
     if (!gl)
@@ -226,9 +257,10 @@ function handleTextureLoaded(texture, RGBorRGBAmode)
         gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, texture.image);
     }
     gl.generateMipmap(gl.TEXTURE_2D);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T,  gl.CLAMP_TO_EDGE);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR);
-    drawScene();
 }
 
 function drawScene()
@@ -251,6 +283,7 @@ function webGLStart()
     BackgroundTexture = initTextures(BackgroundTextureFile, 0);
     ForegroundTexture = initTextures(ForegroundTextureFile, 1);
     gl.enable(gl.DEPTH_TEST);
+    drawScene();
 }
 
 function setupShader(shaderProgram)
@@ -273,6 +306,10 @@ function setupShader(shaderProgram)
     gl.uniform1f(uContrastValueLocation, contrastValue);
     uBrightnessValueLocation = gl.getUniformLocation(shaderProgram, "uBrightnessValue");
     gl.uniform1f(uBrightnessValueLocation, brightnessValue);
+    uProcessLocation = gl.getUniformLocation(shaderProgram, "uProcess");
+    gl.uniform1i(uProcessLocation, process);
+    uPixelSizeLocation = gl.getUniformLocation(shaderProgram, "uPixelSize");
+    gl.uniform1f(uPixelSizeLocation, pixelSize);
 }
 
 function loadBackgroundImage()
@@ -319,9 +356,9 @@ function resetScene()
     colorMode = 0;
     contrastValue = 0.0;
     brightnessValue = 0.0;
+    process = 0;
     document.getElementById("contrast").value = 0;
     document.getElementById("brightness").value = 0;
-    //Reset the radio buttons
     var radios = document.getElementsByName('mode');
     radios[0].checked = true;
     radios[1].checked = false;
@@ -343,4 +380,10 @@ function saveScreenshot()
     link.download = "processed_output.png";
     link.href = img;
     link.click();
+}
+
+function processBackgroundImage(value)
+{
+    process = value;
+    drawScene();
 }
