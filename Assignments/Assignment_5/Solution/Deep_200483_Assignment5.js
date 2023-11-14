@@ -14,7 +14,7 @@ var matrixStack = [];
 
 // mMatrix is called the model matrix, transforms objects
 // from local object space to world space.
-var mMatrix = mat4.create();
+// var mMatrix = mat4.create();
 var uMMatrixLocation;
 var aPositionLocation;
 var uColorLoc;
@@ -29,8 +29,8 @@ var view = 2;
 // New variables
 var canvas;
 
-var vMatrix = mat4.create();
-var pMatrix = mat4.create();
+// var vMatrix = mat4.create();
+// var pMatrix = mat4.create();
 
 var uPMatrixLocation;
 var uVMatrixLocation;
@@ -66,7 +66,7 @@ var sceneBprevMouseX = 0.0;
 var sceneCprevMouseX = 0.0;
 var sceneCprevMouseX = 0.0;
 
-var lightPos = [-20, -20, -10];
+var lPos = [-20, -20, -10];
 
 var aTexCoordLocation;
 var uColorLoc;
@@ -92,14 +92,14 @@ var spIndicies = [];
 var spNormals = [];
 var spTexCoords = [];
 
-var lightPos = [0, -500, -500];
+var lPos = [0, -500, -500];
 
 var COI = [0.0, 0.0, 0.0];
 var viewUp = [0.0, 1.0, 0.0];
 var Anglee = 0.0;
 var eyePos = [25 * Math.sin(Anglee), 10, 25 * Math.cos(Anglee)];
 
-var wnMatrix = mat4.create();
+// var wnMatrix = mat4.create();
 
 var rcubeTex;
 var wTex;
@@ -123,6 +123,12 @@ var whichFilter = 0;
 var contrastValue = 0.0;
 var alphaOrNot = 0;
 var brightnessValue = 0.0;
+
+var lightX = 0.0;
+var bounceLimit = 1;
+var drawShadows = 0;
+var drawReflections = 0;
+
 
 const Assignment4VertexCode = `#version 300 es
 in vec2 aPosition;
@@ -178,7 +184,7 @@ uniform sampler2D uTexture;
 uniform samplerCube uCubeMap;
 uniform vec3 eyePos;
 uniform vec4 color;
-uniform vec3 lightPos;
+uniform vec3 lPos;
 
 in vec2 vTexture1Coord;
 uniform sampler2D uTexture1;
@@ -195,7 +201,7 @@ void main()
 {
 
   vec3 Normal = normalize(vNormal);
-  vec3 Light = normalize(-lightPos);
+  vec3 Light = normalize(-lPos);
   vec3 Reflect = normalize(-reflect(Light,Normal));
   vec3 View = normalize(-vPosition);
   vec4 Ambient = 0.5*color*vec4(1.0,1.0,1.0,1.0);
@@ -300,7 +306,7 @@ precision mediump float;
 in vec3 vertexLoc;
 
 uniform vec4 initialColor;
-uniform vec3 lightPos;
+uniform vec3 lPos;
 
 out vec4 fragColor;
 
@@ -310,7 +316,7 @@ vec4 col1 = 0.6*initialColor*vec4(1.0,1.0,1.0,1.0);
 
 vec3 N = normalize(cross(dFdx(vertexLoc), dFdy(vertexLoc)));
 
-vec3 L = normalize(-lightPos);
+vec3 L = normalize(-lPos);
 
 
 vec3 V = normalize(-vertexLoc);
@@ -335,7 +341,7 @@ in vec3 aNormal;
 uniform mat4 uMMatrix;
 uniform mat4 uPMatrix;
 uniform mat4 uVMatrix;
-uniform vec3 lightPos;
+uniform vec3 lPos;
 uniform vec4 initialColor;
 
 out vec4 vColor;
@@ -354,7 +360,7 @@ vec4 col1 = 0.4*initialColor;
 // col1 = vec4(0.0,0.0,0.0,0.0);
 
 vec3 N = normalize(mat3(transpose(inverse(uVMatrix*uMMatrix)))*aNormal);
-vec3 L = normalize(-vec3(uVMatrix*vec4(lightPos,1.0)));
+vec3 L = normalize(-vec3(uVMatrix*vec4(lPos,1.0)));
 
 vec4 col2 = max(dot(N,L),0.0)*initialColor;
 // col2 = vec4(0.0,0.0,0.0,0.0);
@@ -416,7 +422,7 @@ in vec3 vertexLoc;
 in vec3 vNormal;
 
 uniform vec4 initialColor;
-uniform vec3 lightPos;
+uniform vec3 lPos;
 
 out vec4 fragColor;
 
@@ -427,7 +433,7 @@ vec4 col1 = 0.4*initialColor*vec4(1.0,1.0,1.0,1.0);
 // // col1 = vec4(0.0,0.0,0.0,0.0);
 
 vec3 N = normalize(vNormal);
-vec3 L = normalize(-lightPos);
+vec3 L = normalize(-lPos);
 
 
 
@@ -490,12 +496,12 @@ uniform sampler2D uTexture;
 uniform samplerCube uCubeMap;
 uniform vec3 eyePos;
 uniform vec4 color;
-uniform vec3 lightPos;
+uniform vec3 lPos;
 
 void main() 
 {
   vec3 Normal = normalize(vNormal);
-  vec3 Light = normalize(-lightPos);
+  vec3 Light = normalize(-lPos);
   vec3 Reflect = normalize(-reflect(Light,Normal));
   vec3 View = normalize(-vPosition);
   vec4 Ambient = 0.5*color*vec4(1.0,1.0,1.0,1.0);
@@ -553,12 +559,12 @@ uniform sampler2D uTexture;
 uniform samplerCube uCubeMap;
 uniform vec3 eyePos;
 uniform vec4 color;
-uniform vec3 lightPos;
+uniform vec3 lPos;
 
 void main() 
 {
   vec3 Normal = normalize(vNormal);
-  vec3 Light = normalize(-lightPos);
+  vec3 Light = normalize(-lPos);
   vec3 Reflect = normalize(-reflect(Light,Normal));
   vec3 View = normalize(-vPosition);
   vec4 Ambient = 0.5*color*vec4(1.0,1.0,1.0,1.0);
@@ -618,12 +624,12 @@ uniform sampler2D uTexture;
 uniform samplerCube uCubeMap;
 uniform vec3 eyePos;
 uniform vec4 color;
-uniform vec3 lightPos;
+uniform vec3 lPos;
 
 void main() 
 {
 vec3 Normal = normalize(vNormal);
-vec3 Light = normalize(-lightPos);
+vec3 Light = normalize(-lPos);
 vec3 Reflect = normalize(-reflect(Light,Normal));
 vec3 View = normalize(-vPosition);
 vec4 Ambient = 0.5*color*vec4(1.0,1.0,1.0,1.0);
@@ -683,12 +689,12 @@ uniform sampler2D uTexture;
 uniform samplerCube uCubeMap;
 uniform vec3 eyePos;
 uniform vec4 color;
-uniform vec3 lightPos;
+uniform vec3 lPos;
 
 void main() 
 {
   vec3 Normal = normalize(vNormal);
-  vec3 Light = normalize(-lightPos);
+  vec3 Light = normalize(-lPos);
   vec3 Reflect = normalize(-reflect(Light,Normal));
   vec3 View = normalize(-vPosition);
   vec4 Ambient = 0.5*color*vec4(1.0,1.0,1.0,1.0);
@@ -748,12 +754,12 @@ uniform sampler2D uTexture;
 uniform samplerCube uCubeMap;
 uniform vec3 eyePos;
 uniform vec4 color;
-uniform vec3 lightPos;
+uniform vec3 lPos;
 
 void main() 
 {   
 vec3 Normal = normalize(vNormal);
-vec3 Light = normalize(-lightPos);
+vec3 Light = normalize(-lPos);
 vec3 Reflect = normalize(-reflect(Light,Normal));
 vec3 View = normalize(-vPosition);
 vec4 Ambient = 0.5*color*vec4(1.0,1.0,1.0,1.0);
@@ -768,6 +774,252 @@ vec4 cubeMapReflectCol = texture(uCubeMap, directionReflection);
 vec4 texColor = texture(uTexture, vTexCoord);
 
 fragColor= texColor;
+}`;
+
+const finalVertexShaderCode = `#version 300 es
+in vec3 aPosition;
+in vec3 aNormal;
+in vec2 aTexCoord;
+
+uniform mat4 uMMatrix;
+uniform mat4 uPMatrix;
+uniform mat4 uVMatrix;
+uniform mat4 uWNMatrix;
+
+out vec3 v_worldPosition;
+out vec3 v_worldNormal;
+out vec3 vPosition;
+out vec3 vNormal;
+out vec2 vTexCoord;
+
+in vec2 aTexture1Coord;
+out vec2 vTexture1Coord;
+in vec2 aTexture2Coord;
+out vec2 vTexture2Coord;
+
+void main() 
+{
+  mat4 projectionModelView;
+  projectionModelView=uPMatrix*uVMatrix*uMMatrix;
+  projectionModelView=uMMatrix;
+  gl_Position = projectionModelView*vec4(aPosition,1.0);
+  gl_PointSize = 2.0;
+  // vPosition = normalize(vec3(uVMatrix*uMMatrix*vec4(aPosition,1.0)));
+  // vNormal = normalize(vec3(transpose(inverse(uVMatrix*uMMatrix))*vec4(aNormal,1.0)));
+  // v_worldPosition = mat3(uMMatrix) * aPosition;
+  // v_worldNormal = mat3(uWNMatrix) * aNormal;
+  // vTexCoord = aTexCoord;
+  
+  gl_PointSize = 2.0;
+  // vTexture1Coord = aTexture1Coord;
+  // vTexture2Coord = aTexture2Coord;
+  gl_Position = vec4(aPosition,1.0);
+}`;
+
+const finalFragmentShaderCode = `#version 300 es
+precision highp float;
+out vec4 fragColor;
+
+in vec2 vTexCoord;
+in vec3 v_worldPosition;
+in vec3 v_worldNormal;
+in vec3 vPosition;
+in vec3 vNormal;
+
+uniform sampler2D uTexture;
+uniform samplerCube uCubeMap;
+uniform vec3 eyePos;
+uniform vec4 color;
+uniform vec3 lPos;
+
+in vec2 vTexture1Coord;
+uniform sampler2D uTexture1;
+in vec2 vTexture2Coord;
+uniform sampler2D uTexture2;
+
+uniform int uAlphaOrNot;
+uniform int uSepiaOrGrayscale;
+uniform float uContrastValue;
+uniform float uBrightnessValue;
+uniform int uWhichFilter;
+
+uniform int uShadowOn;
+uniform int uReflectionsOn;
+uniform int uNBounces;
+uniform float uLightCoord;
+uniform int canvWidth;
+uniform int canvHeight;
+
+struct Sphere {
+  vec3 center;
+  float radius;
+  vec3 color;
+  float shine;
+};
+struct Ray {
+  vec3 origin;
+  vec3 direction;
+};
+
+void main()
+{
+  fragColor = vec4(0.0, 0.0, 0.0, 1.0);
+
+  vec3 lPos = vec3(uLightCoord, 30.0, 30.0);
+  vec3 cPos = vec3(0.0, 0.0, 20.0);
+
+  Sphere[4] spheres = Sphere[4](
+      Sphere(vec3(0.0, -52, 0.0), 50.0, vec3(0.75, 0.75, 0.75), 5.0),
+      Sphere(vec3(0.0, 4, 5), 6.0, vec3(1.0, 0.0, 0.0), 10.0),
+      Sphere(vec3(3, 1, 15), 2.0, vec3(0.0, 0.0, 1.0), 100.0),
+      Sphere(vec3(-3, 1, 15), 2.0, vec3(0.0, 1.0, 0.0), 20.0)
+    );
+
+  Ray primaryRay;
+  primaryRay.origin = cPos;
+  vec2 screenPos = gl_FragCoord.xy / vec2(canvWidth, canvHeight);
+  primaryRay.direction = normalize(vec3(screenPos * 2.0 - 1.0, -1.0));
+
+  float firstT = 100000.0;
+  int intersectedSphere = -1;
+  for (int i = 0; i < 4; i++)
+  {
+    Sphere sp = spheres[i];
+    float a = dot(primaryRay.direction, primaryRay.direction);
+    float b = 2.0 * dot(primaryRay.direction, primaryRay.origin - sp.center);
+    float c = dot(primaryRay.origin - sp.center, primaryRay.origin - sp.center) - sp.radius * sp.radius;
+    float D = b * b - 4.0 * a * c;
+    if (D > 0.0)
+    {
+      float t1 = (-b + sqrt(D)) / (2.0 * a);
+      float t2 = (-b - sqrt(D)) / (2.0 * a);
+      float t;
+      if (t1 > 0.0 && t2 > 0.0)
+        t = min(t1, t2);
+      else if (t1 > 0.0)
+        t = t1;
+      else if (t2 > 0.0)
+        t = t2;
+      else
+        continue;
+      if (t < firstT) {
+        firstT = t;
+        intersectedSphere = i;
+      }
+    }
+  }
+  if (intersectedSphere != -1)
+  {
+    vec3 intersectionPoint = primaryRay.origin + firstT * primaryRay.direction;
+    vec3 N = normalize(intersectionPoint - spheres[intersectedSphere].center);
+    vec3 color = spheres[intersectedSphere].color;
+    vec3 LD = normalize(lPos - intersectionPoint);
+    vec3 RD = reflect(primaryRay.direction, N);
+    vec3 VD = normalize(cPos - intersectionPoint);
+
+    Ray sRay;
+    sRay.origin = intersectionPoint + 0.001 * LD;
+    sRay.direction = LD;
+    bool shadowIntersect = false;
+    for (int i = 0; i < 4; i++)
+    {
+      Sphere sp = spheres[i];
+      float a = dot(sRay.direction, sRay.direction);
+      float b = 2.0 * dot(sRay.direction, sRay.origin - sp.center);
+      float c = dot(sRay.origin - sp.center, sRay.origin - sp.center) - sp.radius * sp.radius;
+      float D = b * b - 4.0 * a * c;
+      if (D > 0.0)
+      {
+        float t1 = (-b + sqrt(D)) / (2.0 * a);
+        float t2 = (-b - sqrt(D)) / (2.0 * a);
+        if (t1 > 0.0 || t2 > 0.0)
+        {
+          shadowIntersect = true;
+          break;
+        }
+      }
+    }
+
+    Ray rRay;
+    rRay.origin = intersectionPoint + 0.0001 * RD;
+    rRay.direction = RD;
+    float firstT = 100000.0;
+
+    vec3 reflectionColor = vec3(0.0, 0.0, 0.0);
+    bool reflectionIntersect = false;
+
+    for (int i = 0; i < uNBounces; i++)
+    {
+      int reflectedSphere = -1;
+      vec3 tempColor = vec3(0.0, 0.0, 0.0);
+      for (int j = 0; j < 4; j++)
+      {
+        Sphere sp = spheres[j];
+        float a = dot(rRay.direction, rRay.direction);
+        float b = 2.0 * dot(rRay.direction, rRay.origin - sp.center);
+        float c = dot(rRay.origin - sp.center, rRay.origin - sp.center) - sp.radius * sp.radius;
+        float D = b * b - 4.0 * a * c;
+        if (D > 0.0)
+        {
+          float t1 = (-b + sqrt(D)) / (2.0 * a);
+          float t2 = (-b - sqrt(D)) / (2.0 * a);
+          float t;
+          if (t1 > 0.0 && t2 > 0.0)
+            t = min(t1, t2);
+          else if (t1 > 0.0)
+            t = t1;
+          else if (t2 > 0.0)
+            t = t2;
+          else
+            continue;
+          if (t < firstT)
+          {
+            firstT = t;
+            reflectedSphere = j;
+            vec3 intersectionPoint = rRay.origin + firstT * rRay.direction;
+            vec3 N = normalize(intersectionPoint - spheres[reflectedSphere].center);
+            vec3 LD = normalize(lPos - intersectionPoint);
+            vec3 RD = reflect(rRay.direction, N);
+            vec3 VD = normalize(cPos - intersectionPoint);
+
+            vec3 ambient = spheres[reflectedSphere].color;
+            vec3 diffuse = spheres[reflectedSphere].color * max(dot(LD, N), 0.0);
+            vec3 specular = vec3(1.0, 1.0, 1.0) * pow(max(dot(RD, LD), 0.0), spheres[reflectedSphere].shine);
+
+            tempColor = 0.8 * diffuse + 0.2 * ambient + 0.8 * specular;
+          }
+        }
+      }
+      if (reflectedSphere == -1)
+        break;
+
+      reflectionIntersect = true;
+      reflectionColor = mix(reflectionColor, tempColor, 0.75);
+
+      Ray tRay;
+      tRay.direction = reflect(rRay.direction, normalize(rRay.origin + firstT * rRay.direction - spheres[reflectedSphere].center));
+      tRay.origin = rRay.origin + firstT * rRay.direction + 0.0001 * tRay.direction;
+      rRay = tRay;
+      firstT = 100000.0;
+    }
+
+    vec3 ambient = color;
+    vec3 diffuse = color * max(dot(LD, N), 0.0);
+    vec3 specular = vec3(1.0, 1.0, 1.0) * pow(max(dot(RD, LD), 0.0), spheres[intersectedSphere].shine);
+
+    if (uShadowOn == 1 && shadowIntersect == true)
+    {
+      diffuse = vec3(0.0, 0.0, 0.0);
+      specular = vec3(0.0, 0.0, 0.0);
+    }
+
+    if (uReflectionsOn == 1)
+      if (reflectionIntersect == true)
+        diffuse = mix(diffuse, reflectionColor, 0.75);
+
+    vec3 finalColor = 0.8 * diffuse + 0.2 * ambient + 0.8 * specular;
+    fragColor = vec4(finalColor, 1.0);
+  }
 }`;
 
 function pushMatrix(stack, m) {
@@ -835,7 +1087,7 @@ function initGL() {
   }
 }
 
-// New sphere initialization function
+// New sp initialization function
 function initSphere(nslices, nstacks, radius) {
   for (var i = 0; i <= nslices; i++) {
     var angle = (i * Math.PI) / nslices;
@@ -1287,7 +1539,7 @@ function handleTextureLoaded(texture) {
   gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, texture.image);
   gl.generateMipmap(gl.TEXTURE_2D);
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T,  gl.CLAMP_TO_EDGE);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR);
   // drawScene();
@@ -1382,12 +1634,12 @@ function drawScene() {
   eyePos = [25 * Math.sin(Anglee), 10, 25 * Math.cos(Anglee)];
 
   // set up the view matrix, multiply into the modelview matrix
-  mat4.identity(vMatrix);
-  vMatrix = mat4.lookAt(eyePos, COI, viewUp, vMatrix);
+  // mat4.identity(vMatrix);
+  // vMatrix = mat4.lookAt(eyePos, COI, viewUp, vMatrix);
 
   //set up perspective projection matrix
-  mat4.identity(pMatrix);
-  mat4.perspective(50, 1.0, 0.1, 1000, pMatrix);
+  // mat4.identity(pMatrix);
+  // mat4.perspective(50, 1.0, 0.1, 1000, pMatrix);
 
   // Testing
   // gl.viewport(0*height, 0, height, height);
@@ -1401,7 +1653,7 @@ function drawScene() {
   gl.clearColor(0.0, 0.0, 0.0, 1.0);
   gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
-  gl.useProgram(Assignment4ShaderProgram);
+  // gl.useProgram(Assignment4ShaderProgram);
 
 
   aPositionLocation = gl.getAttribLocation(shaderProgram, "aPosition");
@@ -1426,24 +1678,24 @@ function drawScene() {
   gl.uniform1i(uWhichFilterLocation, whichFilter);
 
 
-  mat4.scale(mMatrix, [2, 2, 1]);
+  // mat4.scale(mMatrix, [2, 2, 1]);
 
-  gl.bindBuffer(gl.ARRAY_BUFFER, sqBuf);
-  gl.vertexAttribPointer(aPositionLocation, sqBuf.itemSize, gl.FLOAT, false, 0, 0);
-  gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, sqIndexBuf);
-  gl.bindBuffer(gl.ARRAY_BUFFER, sqTexBuf);
-  gl.vertexAttribPointer(aTex1CoordLocation, sqTexBuf.itemSize, gl.FLOAT, false, 0, 0);
-  gl.activeTexture(gl.TEXTURE0);
-  gl.bindTexture(gl.TEXTURE_2D, Texture1);
-  gl.uniform1i(uTexture1Location, 0);
-  gl.vertexAttribPointer(aTex2CoordLocation, sqTexBuf.itemSize, gl.FLOAT, false, 0, 0);
-  gl.activeTexture(gl.TEXTURE1);
-  gl.bindTexture(gl.TEXTURE_2D, Texture2);
-  gl.uniform1i(uTexture2Location, 1);
-  gl.uniformMatrix4fv(uMMatrixLocation, false, mMatrix);
-  gl.uniformMatrix4fv(uVMatrixLocation, false, vMatrix);
-  gl.uniformMatrix4fv(uPMatrixLocation, false, pMatrix);
-  gl.drawElements(gl.TRIANGLES, sqIndexBuf.numItems, gl.UNSIGNED_SHORT, 0);
+  // gl.bindBuffer(gl.ARRAY_BUFFER, sqBuf);
+  // gl.vertexAttribPointer(aPositionLocation, sqBuf.itemSize, gl.FLOAT, false, 0, 0);
+  // gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, sqIndexBuf);
+  // gl.bindBuffer(gl.ARRAY_BUFFER, sqTexBuf);
+  // gl.vertexAttribPointer(aTex1CoordLocation, sqTexBuf.itemSize, gl.FLOAT, false, 0, 0);
+  // gl.activeTexture(gl.TEXTURE0);
+  // gl.bindTexture(gl.TEXTURE_2D, Texture1);
+  // gl.uniform1i(uTexture1Location, 0);
+  // gl.vertexAttribPointer(aTex2CoordLocation, sqTexBuf.itemSize, gl.FLOAT, false, 0, 0);
+  // gl.activeTexture(gl.TEXTURE1);
+  // gl.bindTexture(gl.TEXTURE_2D, Texture2);
+  // gl.uniform1i(uTexture2Location, 1);
+  // gl.uniformMatrix4fv(uMMatrixLocation, false, mMatrix);
+  // gl.uniformMatrix4fv(uVMatrixLocation, false, vMatrix);
+  // gl.uniformMatrix4fv(uPMatrixLocation, false, pMatrix);
+  // gl.drawElements(gl.TRIANGLES, sqIndexBuf.numItems, gl.UNSIGNED_SHORT, 0);
 
 
   // drawScene();
@@ -1452,6 +1704,34 @@ function drawScene() {
 
   // };
   // animate();
+
+
+
+  gl.useProgram(finalShaderProgram);
+  const uShadowOn = gl.getUniformLocation(finalShaderProgram, "uShadowOn");
+  gl.uniform1i(uShadowOn, drawShadows);
+  const uReflectionsOn = gl.getUniformLocation(finalShaderProgram, "uReflectionsOn");
+  gl.uniform1i(uReflectionsOn, drawReflections);
+  const uNBounces = gl.getUniformLocation(finalShaderProgram, "uNBounces");
+  gl.uniform1i(uNBounces, bounceLimit);
+  const uLightCoord = gl.getUniformLocation(finalShaderProgram, "uLightCoord");
+  gl.uniform1f(uLightCoord, lightX);
+  const canvWidth = gl.getUniformLocation(finalShaderProgram, "canvWidth");
+  gl.uniform1i(canvWidth, canvas.width);
+  const canvHeight = gl.getUniformLocation(finalShaderProgram, "canvHeight");
+  gl.uniform1i(canvHeight, canvas.height);
+
+  // Just draw a rectangle that covers the canvas.
+  const bufData = new Float32Array([
+    -1, 1, 0, 1, 1, 0, -1, -1, 0, -1, -1, 0, 1, 1, 0, 1, -1, 0,]);
+  const buf = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+  gl.bufferData(gl.ARRAY_BUFFER, bufData, gl.STATIC_DRAW);
+  const aPosition = gl.getAttribLocation(finalShaderProgram, "aPosition");
+  gl.enableVertexAttribArray(aPosition);
+  gl.vertexAttribPointer(aPosition, 3, gl.FLOAT, false, 0, 0);
+
+  gl.drawArrays(gl.TRIANGLES, 0, 6);
 }
 
 function webGLStart() {
@@ -1470,22 +1750,22 @@ function webGLStart() {
 
   initGL(canvas);
   //Initialize the shaders (new ones)
-  ShaderProgram = initShaders(vertexShaderCode, fragShaderCode);
-  sceneAShaderProgram = initShaders(sceneAVertexShaderCode, sceneAFragmentShaderCode);
-  sceneBShaderProgram = initShaders(sceneBVertexShaderCode, sceneBFragmentShaderCode);
-  sceneCShaderProgram = initShaders(sceneCVertexShaderCode, sceneCFragmentShaderCode);
+  // ShaderProgram = initShaders(vertexShaderCode, fragShaderCode);
+  // sceneAShaderProgram = initShaders(sceneAVertexShaderCode, sceneAFragmentShaderCode);
+  // sceneBShaderProgram = initShaders(sceneBVertexShaderCode, sceneBFragmentShaderCode);
+  // sceneCShaderProgram = initShaders(sceneCVertexShaderCode, sceneCFragmentShaderCode);
 
-  onlyTextureShaderProgram = initShaders(boundingboxVShader, boundingboxFShader);
-  onlyRefractionShaderProgram = initShaders(glassVShader, glassFShader);
-  onlyReflectionShaderProgram = initShaders(teapotVShader, teapotFShader);
-  reflectionAndTextureShaderProgram = initShaders(tableVShader, tableFShader);
-  reflectionAndPhongShaderProgram = initShaders(ballsVShader, ballsFShader);
+  // onlyTextureShaderProgram = initShaders(boundingboxVShader, boundingboxFShader);
+  // onlyRefractionShaderProgram = initShaders(glassVShader, glassFShader);
+  // onlyReflectionShaderProgram = initShaders(teapotVShader, teapotFShader);
+  // reflectionAndTextureShaderProgram = initShaders(tableVShader, tableFShader);
+  // reflectionAndPhongShaderProgram = initShaders(ballsVShader, ballsFShader);
 
   //Initialize the buffers
   // initObject();
   // initSphereBuffer();
   // initCubeBuffer();
-  initSquareBuffer();
+  // initSquareBuffer();
 
   // Load texture files
   // rcubeTex = initTextures("texture_and_other_files/rcube.png");
@@ -1498,12 +1778,14 @@ function webGLStart() {
   // negZTex = initTextures("texture_and_other_files/Nvidia_cubemap/" + "negz.jpg");
   // initCubeMap();
 
-  Assignment4ShaderProgram = initShaders(Assignment4VertexCode, Assignment4FragCode);
-  Texture1 = initTextures(TextureFile1, 0);
-  Texture2 = initRGBATextures(TextureFile2, 1);
-  gl.enable(gl.DEPTH_TEST);
+  // Assignment4ShaderProgram = initShaders(Assignment4VertexCode, Assignment4FragCode);
+  // Texture1 = initTextures(TextureFile1, 0);
+  // Texture2 = initRGBATextures(TextureFile2, 1);
+  // gl.enable(gl.DEPTH_TEST);
 
   // Enable depth test to make sure objects in front are always in front no matter the order
+  gl.enable(gl.DEPTH_TEST);
+  finalShaderProgram = initShaders(finalVertexShaderCode, finalFragmentShaderCode);
   gl.enable(gl.DEPTH_TEST);
   drawScene();
 }
@@ -1514,7 +1796,7 @@ function changeCameraPos() {
 }
 
 function changeLightPos() {
-  lightPos = [LPosId.value, -20, -10];
+  lPos = [LPosId.value, -20, -10];
   drawScene();
 }
 
@@ -1664,5 +1946,37 @@ function saveScreenshot() {
 
 function processBackgroundImage(value) {
   whichFilter = value;
+  drawScene();
+}
+
+function changeLightPosition(temp) {
+  lightX = temp;
+  drawScene();
+}
+
+function changeBounceLimit(temp) {
+  bounceLimit = temp;
+  drawScene();
+}
+
+function changeShadingMode(temp) {
+  switch (temp) {
+    case 0:
+      drawShadows = 0;
+      drawReflections = 0;
+      break;
+    case 1:
+      drawShadows = 1;
+      drawReflections = 0;
+      break;
+    case 2:
+      drawShadows = 0;
+      drawReflections = 1;
+      break;
+    case 3:
+      drawShadows = 1;
+      drawReflections = 1;
+      break;
+  }
   drawScene();
 }

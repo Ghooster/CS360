@@ -6,7 +6,7 @@
   <title>Assignment 5 Final(CS360)</title>
   <meta http-equiv="content-type" content="text/html; charset=ISO-8859-1" />
   <!-- <script type="text/javascript" src="glMatrix-0.9.5.min.js"></script> -->
-  <script type="text/javascript" src="Deep_200483_Assignment4.js"></script>
+  <script type="text/javascript" src="Deep_200483_Assignment5.js"></script>
   <!-- <style>
       table.names {width:1200px;}
       td {width:400px; text-align: center;}
@@ -18,9 +18,24 @@
   <body onload="webGLStart();">
 
     <div
-      style="background-color: #b6e0f2; width: 400px; height: 800px; padding: 20px; border: 2px solid black; margin: auto;">
+      style="background-color: #b6e0f2; width: 400px; height: 600px; padding: 20px; border: 2px solid black; margin: auto;">
 
       <canvas id="myCanvas" style="border: none" width="400" height="400"></canvas>
+
+      <b>Shading Mode:</b><br><br>
+      <!-- 5 buttons for Phong, Phong+Shadow, Phong+Reflection, Phong+Shadow+Reflection -->
+      <input type="button" value="Phong" onclick="changeShadingMode(0)">
+      <input type="button" value="Phong+Shadow" onclick="changeShadingMode(1)">
+      <input type="button" value="Phong+Reflection" onclick="changeShadingMode(2)"> <br><br>
+      <input type="button" value="Phong+Shadow+Reflection" onclick="changeShadingMode(3)"><br><br>
+      Move Light:
+      <input type="range" step="0.01" id="moveLight" name="moveLight" min="-100" max="100" value="0"
+        oninput="changeLightPosition(this.value); lPO.value = this.value">
+      <output id="lPO" name="lPO">0</output><br><br>
+      Bounce Limit:
+      <input type="range" id="bounceLimit" name="bounceLimit" min="1" max="5" value="1"
+        oninput="changeBounceLimit(this.value); bLO.value = this.value">
+      <output id="bLO" name="bLO">1</output><br>
       <!-- <table class="names">
       <tr>
         <td>
@@ -44,40 +59,40 @@
     </div> -->
 
       <!-- 2 buttons for Background and Foreground Images -->
-      <br>
+      <!-- <br>
       Select Background Image:
       <input type="file" id="backgroundImage" name="backgroundImage" accept="image/*"
         onchange="loadTexture1(event)"><br><br>
       Select Foreground Image:
       <input type="file" id="foregroundImage" name="foregroundImage" accept="image/*"
-        onchange="loadTexture2(event)"><br><br>
+        onchange="loadTexture2(event)"><br><br> -->
       <!-- 2 radio buttons for Background Only and Alpha Blended -->
-      <b>Image Mode</b>
+      <!-- <b>Image Mode</b>
       <input type="radio" id="backgroundOnly" name="mode" value="backgroundOnly"
         onclick="changeToBackgroundOnly()">Background
       Only
       <input type="radio" id="alphaBlended" name="mode" value="alphaBlended" onclick="changeToAlphaBlended()">Alpha
-      Blended<br><br>
+      Blended<br><br> -->
       <!-- 2 radio buttons for GrayScale and Sepia -->
-      <input type="radio" id="grayScale" name="color" value="grayScale" onclick="changeToGrayscale()">GrayScale
-      <input type="radio" id="sepia" name="color" value="sepia" onclick="changeToSepia()">Sepia<br><br>
+      <!-- <input type="radio" id="grayScale" name="color" value="grayScale" onclick="changeToGrayscale()">GrayScale
+      <input type="radio" id="sepia" name="color" value="sepia" onclick="changeToSepia()">Sepia<br><br> -->
       <!-- 2 sliders for Contrast and Brightness -->
-      Contrast
+      <!-- Contrast
       <input type="range" step="any" id="contrast" name="contrast" min="-.5" max=".5" value=".0"
         oninput="changeContrastValue(this.value)"><br><br>
       Brightness
       <input type="range" step="any" id="brightness" name="brightness" min="-.5" max=".5" value=".0"
-        oninput="changeBrightnessValue(this.value)"><br><br>
+        oninput="changeBrightnessValue(this.value)"><br><br> -->
       <!-- 4 radio buttons for Smooth, Sharpen, Gradient and Laplacian -->
-      <b>Process Background Image:</b><br>
+      <!-- <b>Process Background Image:</b><br>
       <input type="radio" id="smooth" name="filter" value="smooth" onclick="processBackgroundImage(1)">Smooth
       <input type="radio" id="sharpen" name="filter" value="sharpen" onclick="processBackgroundImage(2)">Sharpen
       <input type="radio" id="gradient" name="filter" value="gradient" onclick="processBackgroundImage(3)">Gradient
       <input type="radio" id="laplacian" name="filter" value="laplacian"
-        onclick="processBackgroundImage(4)">Laplacian<br><br>
+        onclick="processBackgroundImage(4)">Laplacian<br><br> -->
       <!-- Buttons to reset screen and Save Screenshot -->
-      <input type="button" id="reset" name="reset" value="Reset Scene" onclick="resetScene()">
-      <input type="button" id="save" name="save" value="Save Screenshot" onclick="saveScreenshot()"><br><br>
+      <!-- <input type="button" id="reset" name="reset" value="Reset Scene" onclick="resetScene()">
+      <input type="button" id="save" name="save" value="Save Screenshot" onclick="saveScreenshot()"><br><br> -->
 
   </body>
 
