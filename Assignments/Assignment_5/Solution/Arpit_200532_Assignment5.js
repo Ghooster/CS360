@@ -41,14 +41,14 @@ void main()
 {
     fragColor = vec4(0.0,0.0,0.0,1.0);
 
-    vec3 lightPos = vec3(uLightX,10.0,10.0);
+    vec3 lightPos = vec3(uLightX,3.0,3.0);
     vec3 cameraPos = vec3(0.0,0.0,2.0);
 
     Sphere[4] spheres = Sphere[4](
         Sphere(vec3(0.0,-5.25,0.0), 5.0, vec3(0.75,0.75,0.75), 5.0),
-        Sphere(vec3(0.0,0.75,-1.0), 1.1, vec3(1.0,0.0,0.0), 10.0),
-        Sphere(vec3(1.2,0.5,0.0), 0.75, vec3(0.0,0.0,1.0), 100.0),
-        Sphere(vec3(-1.2,0.5,0.0), 0.75, vec3(0.0,1.0,0.0), 20.0)
+        Sphere(vec3(0.0,0.4,0.5), 0.6, vec3(1.0,0.0,0.0), 10.0),
+        Sphere(vec3(0.3,0.1,1.5), 0.2, vec3(0.0,0.0,1.0), 100.0),
+        Sphere(vec3(-0.3,0.1,1.5), 0.2, vec3(0.0,1.0,0.0), 20.0)
     );
 
     Ray primaryRay;
@@ -104,7 +104,36 @@ void main()
         vec3 ambient = color;
         vec3 diffuse = color * max(dot(lightDir, normal), 0.0);
         vec3 specular = vec3(1.0,1.0,1.0) * pow(max(dot(reflectedRay, lightDir), 0.0), spheres[intersectedSphere].shine);
+        Ray shadowRay;
+        shadowRay.origin = intersectionPoint + 0.0001 * lightDir;
+        shadowRay.direction = lightDir;
+        bool shadowIntersect = false;
+        for(int i=0; i<4; i++)
+        {
+            Sphere sphere = spheres[i];
+            float a = dot(shadowRay.direction, shadowRay.direction);
+            float b = 2.0 * dot(shadowRay.direction, shadowRay.origin - sphere.center);
+            float c = dot(shadowRay.origin - sphere.center, shadowRay.origin - sphere.center) - sphere.radius * sphere.radius;
+            float D = b * b - 4.0 * a * c;
+            if(D > 0.0)
+            {
+                float t1 = (-b + sqrt(D)) / (2.0 * a);
+                float t2 = (-b - sqrt(D)) / (2.0 * a);
+                if(t1 > 0.0 || t2 > 0.0)
+                {
+                    shadowIntersect = true;
+                    break;
+                }
+            }
+        }
+        if(shadowIntersect)
+        {
+            diffuse = vec3(0.0,0.0,0.0);
+            specular = vec3(0.0,0.0,0.0);
         vec3 finalColor = 0.5*diffuse + 0.2*ambient + specular;
+        fragColor = vec4(finalColor, 1.0);
+    }
+        vec3 finalColor = 0.5*diffuse + 0.2*ambient + 0.8*specular;
         fragColor = vec4(finalColor, 1.0);
     }
 }`;
