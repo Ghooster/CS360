@@ -1,7 +1,7 @@
 var gl;
 var canvas;
 var lightX = 0.0;
-var nBounce= 0;
+var nBounce= 1;
 var shadowYes = 0;
 var reflectionYes = 0;
 
@@ -99,11 +99,9 @@ void main()
         vec3 normal = normalize(intersectionPoint - spheres[intersectedSphere].center);
         vec3 color = spheres[intersectedSphere].color;
         vec3 lightDir = normalize(lightPos - intersectionPoint);
-        vec3 reflectedRay = reflect(primaryRay.direction, normal);
+        vec3 reflectDir = reflect(primaryRay.direction, normal);
         vec3 viewDir = normalize(cameraPos - intersectionPoint);
-        vec3 ambient = color;
-        vec3 diffuse = color * max(dot(lightDir, normal), 0.0);
-        vec3 specular = vec3(1.0,1.0,1.0) * pow(max(dot(reflectedRay, lightDir), 0.0), spheres[intersectedSphere].shine);
+
         Ray shadowRay;
         shadowRay.origin = intersectionPoint + 0.0001 * lightDir;
         shadowRay.direction = lightDir;
@@ -126,14 +124,98 @@ void main()
                 }
             }
         }
-        if(shadowIntersect)
+
+        Ray reflectionRay;
+        reflectionRay.origin = intersectionPoint + 0.00001 * reflectDir;
+        reflectionRay.direction = reflectDir;
+        float minT = 1000000.0;
+
+        vec3 reflectionColor = vec3(0.0,0.0,0.0);
+        bool reflectionIntersect = false;
+
+        for(int i=0; i<uNBounce; i++)
+        {
+            int reflectedSphere = -1;
+            vec3 tempColor = vec3(0.0,0.0,0.0);
+            for(int j=0; j<4; j++)
+            {
+                Sphere sphere = spheres[j];
+                float a = dot(reflectionRay.direction, reflectionRay.direction);
+                float b = 2.0 * dot(reflectionRay.direction, reflectionRay.origin - sphere.center);
+                float c = dot(reflectionRay.origin - sphere.center, reflectionRay.origin - sphere.center) - sphere.radius * sphere.radius;
+                float D = b * b - 4.0 * a * c;
+                if(D > 0.0)
+                {
+                    float t1 = (-b + sqrt(D)) / (2.0 * a);
+                    float t2 = (-b - sqrt(D)) / (2.0 * a);
+                    float t;
+                    if(t1 > 0.0 && t2 > 0.0)
+                    {
+                        t = min(t1, t2);
+                    }
+                    else if(t1 > 0.0)
+                    {
+                        t = t1;
+                    }
+                    else if(t2 > 0.0)
+                    {
+                        t = t2;
+                    }
+                    else
+                    {
+                        continue;
+                    }
+                    if(t < minT)
+                    {
+                        minT = t;
+                        reflectedSphere = j;
+                        vec3 intersectionPoint = reflectionRay.origin + minT * reflectionRay.direction;
+                        vec3 normal = normalize(intersectionPoint - spheres[reflectedSphere].center);
+                        vec3 lightDir = normalize(lightPos - intersectionPoint);
+                        vec3 reflectDir = reflect(reflectionRay.direction, normal);
+                        vec3 viewDir = normalize(cameraPos - intersectionPoint);
+                        
+                        vec3 ambient = spheres[reflectedSphere].color;
+                        vec3 diffuse = spheres[reflectedSphere].color * max(dot(lightDir, normal), 0.0);
+                        vec3 specular = vec3(1.0,1.0,1.0) * pow(max(dot(reflectDir, lightDir), 0.0), spheres[reflectedSphere].shine);
+                        tempColor = 0.7*diffuse + 0.2*ambient + 0.8*specular;
+                    }
+                }
+            }
+            if(reflectedSphere == -1)
+            {
+                break;
+            }
+
+            reflectionIntersect = true;
+            reflectionColor = mix(reflectionColor, tempColor, 0.8);
+
+            Ray tempRay;
+            tempRay.direction = reflect(reflectionRay.direction, normalize(reflectionRay.origin + minT * reflectionRay.direction - spheres[reflectedSphere].center));
+            tempRay.origin = reflectionRay.origin + minT * reflectionRay.direction + 0.00001 * tempRay.direction;
+            reflectionRay = tempRay;
+            minT = 1000000.0;
+        }
+
+        vec3 ambient = color;
+        vec3 diffuse = color * max(dot(lightDir, normal), 0.0);
+        vec3 specular = vec3(1.0,1.0,1.0) * pow(max(dot(reflectDir, lightDir), 0.0), spheres[intersectedSphere].shine);
+
+        if(uShadowYes == 1 && shadowIntersect == true)
         {
             diffuse = vec3(0.0,0.0,0.0);
             specular = vec3(0.0,0.0,0.0);
-        vec3 finalColor = 0.5*diffuse + 0.2*ambient + specular;
-        fragColor = vec4(finalColor, 1.0);
-    }
-        vec3 finalColor = 0.5*diffuse + 0.2*ambient + 0.8*specular;
+        }
+
+        if(uReflectionYes == 1)
+        {
+            if(reflectionIntersect == true)
+            {
+                diffuse = mix(diffuse, reflectionColor, 0.8);
+            }
+        }
+
+        vec3 finalColor = 0.7*diffuse + 0.2*ambient + 0.8*specular;
         fragColor = vec4(finalColor, 1.0);
     }
 }`;

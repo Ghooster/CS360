@@ -3,7 +3,7 @@
 <html>
 
 <head>
-<title>Bounce World</title>
+<title>Bouncy World</title>
 <meta http-equiv="content-type" content="text/html; charset=ISO-8859-1" />
 <script type="text/javascript" src="Arpit_200532_Assignment5.js"></script>
 </head>
@@ -19,11 +19,11 @@
 <input type="button" value="Phong+Reflection" onclick="changeShadingMode(2)"> <br><br>
 <input type="button" value="Phong+Shadow+Reflection" onclick="changeShadingMode(3)"><br><br>
 Move Light:
-<input type="range" step="any" id="moveLight" name="moveLight" min="-20" max="20" value="0" oninput="changeLightPosition(this.value); lightPositionOutput.value = this.value">
+<input type="range" step="0.01" id="moveLight" name="moveLight" min="-10" max="10" value="0" oninput="changeLightPosition(this.value); lightPositionOutput.value = this.value">
 <output id="lightPositionOutput" name="lightPositionOutput">0</output><br>
 Bounce Limit:
-<input type="range" id="bounceLimit" name="bounceLimit" min="0" max="10" value="0" oninput="changeBounceLimit(this.value); bounceLimitOutput.value = this.value">
-<output id="bounceLimitOutput" name="bounceLimitOutput">0</output><br>
+<input type="range" id="bounceLimit" name="bounceLimit" min="1" max="5" value="1" oninput="changeBounceLimit(this.value); bounceLimitOutput.value = this.value">
+<output id="bounceLimitOutput" name="bounceLimitOutput">1</output><br>
 </div>
 </body>
 
