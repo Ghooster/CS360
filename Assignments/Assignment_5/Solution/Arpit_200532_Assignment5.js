@@ -178,6 +178,35 @@ void main()
                         vec3 ambient = spheres[reflectedSphere].color;
                         vec3 diffuse = spheres[reflectedSphere].color * max(dot(lightDir, normal), 0.0);
                         vec3 specular = vec3(1.0,1.0,1.0) * pow(max(dot(reflectDir, lightDir), 0.0), spheres[reflectedSphere].shine);
+
+                        Ray shadowRay;
+                        shadowRay.origin = intersectionPoint + 0.0001 * lightDir;
+                        shadowRay.direction = lightDir;
+                        bool shadowIntersect = false;
+                        for(int k=0; k<4; k++)
+                        {
+                            Sphere sphere = spheres[k];
+                            float a = dot(shadowRay.direction, shadowRay.direction);
+                            float b = 2.0 * dot(shadowRay.direction, shadowRay.origin - sphere.center);
+                            float c = dot(shadowRay.origin - sphere.center, shadowRay.origin - sphere.center) - sphere.radius * sphere.radius;
+                            float D = b * b - 4.0 * a * c;
+                            if(D > 0.0)
+                            {
+                                float t1 = (-b + sqrt(D)) / (2.0 * a);
+                                float t2 = (-b - sqrt(D)) / (2.0 * a);
+                                if(t1 > 0.0 || t2 > 0.0)
+                                {
+                                    shadowIntersect = true;
+                                    break;
+                                }
+                            }
+                        }
+                        // if(shadowIntersect == true)
+                        // {
+                        //     diffuse = vec3(0.0,0.0,0.0);
+                        //     specular = vec3(0.0,0.0,0.0);
+                        // }
+
                         tempColor = 0.7*diffuse + 0.2*ambient + 0.8*specular;
                     }
                 }
